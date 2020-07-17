@@ -41,5 +41,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     mainwindow.qrc
 
-DISTFILES += \
+OTHER_FILES += \
     setup.iss
+
+DISTFILES += \
+    README.md
