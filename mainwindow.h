@@ -22,6 +22,8 @@ public:
 private slots:
     void on_btnLoad_clicked();
 
+    void on_lstBlocks_currentRowChanged(int currentRow);
+
 private:
     Ui::MainWindow *ui;
     QString _file;

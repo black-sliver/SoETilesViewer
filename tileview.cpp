@@ -34,6 +34,19 @@ int TileView::addColorMap(const ColorMap &map)
     return idx;
 }
 
+void TileView::setSelected(int index)
+{
+    _selected = index;
+}
+
+int TileView::getY(int index) const
+{
+    int w = width();
+    int cols = (w-1)/(33);
+    int row = index/cols;
+    return row*33;
+}
+
 
 void TileView::resizeEvent(QResizeEvent *ev)
 {
@@ -47,18 +60,18 @@ void TileView::paintEvent(QPaintEvent* ev)
     //if (scroll && scroll->verticalScrollBar()) off = scroll->verticalScrollBar()->value();
     int w = width();
     int h = height();
+    int cols = (w-1)/(33);
 
     if (!_pixels || !_image || _layoutChanged) {
         qDebug("reshape: %dx%d, scroll %d\n", w, h, off);
 
-        int cols = w/(33);
         int rows =(_spriteBlocks.count()+cols-1)/cols;
-        this->setMinimumHeight(33*rows);
+        this->setMinimumHeight(1+33*rows);
         _layoutChanged = false;
 
         //QWidget::paintEvent(ev);
-        int x = 0;
-        int y = 0;
+        int x = 1;
+        int y = 1;
         if (_pixels) delete[] _pixels;
         _pixels = new QRgb[w*h];
 
@@ -81,7 +94,7 @@ void TileView::paintEvent(QPaintEvent* ev)
             }
             x += 33;
             if (x+32 > w) {
-                x = 0;
+                x = 1;
                 y += 33;
             }
             if (y+32 > h) break; // out of space
@@ -91,5 +104,17 @@ void TileView::paintEvent(QPaintEvent* ev)
     }
     QPainter painter(this);
     qDebug("redraw: %dx%d, scroll %d\n", w, h, off);
+    if (_selected>=0) {
+        int row = _selected/cols;
+        int col = _selected%cols;
+        int x1=col*33, x2=x1+33, y1=row*33, y2=y1+33;
+        painter.setPen(QColor(0xff66aaff));
+        painter.fillRect(x1, y1, 34, 34, QColor(0xff66aaff));
+        painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
+        painter.drawLine(x1, y1, x2, y1);
+        painter.drawLine(x1, y2, x2, y2);
+        painter.drawLine(x1, y1, x1, y2);
+        painter.drawLine(x2, y1, x2, y2);
+    }
     painter.drawImage(0,0, *_image);
 }

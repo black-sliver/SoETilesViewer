@@ -4,6 +4,8 @@
 #include <QSettings>
 #include <QFontDatabase>
 #include <QMessageBox>
+#include <QScrollArea>
+#include <QScrollBar>
 #include "colormap.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -68,4 +70,21 @@ bool MainWindow::loadRom()
     ui->lstBlocks->adjustSize();
 
     return true; // OK
+}
+
+void MainWindow::on_lstBlocks_currentRowChanged(int currentRow)
+{
+    ui->tiles->setSelected(currentRow);
+    ui->tiles->repaint();
+    int tileY1 = ui->tiles->getY(currentRow);
+    int tileY2 = tileY1+34; // both borders visible
+    int viewY1 = ui->scrollArea->verticalScrollBar()->value();
+    int viewY2 = viewY1+ui->scrollArea->viewport()->height();
+    if (tileY1<viewY1) {
+        // scroll up until tile is visible
+        ui->scrollArea->ensureVisible(0, tileY2, 0, 34);
+    } else if (tileY2>viewY2) {
+        // scroll down until tile is visible
+        ui->scrollArea->ensureVisible(0, tileY1, 0, 34);
+    }
 }
