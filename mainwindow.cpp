@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QListWidget>
 #include "colormap.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -32,6 +33,11 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+
+void MainWindow::on_tiles_selectionChanged(int index)
+{
+    ui->lstBlocks->setCurrentRow(index);
+}
 
 void MainWindow::on_btnLoad_clicked()
 {
@@ -75,7 +81,6 @@ bool MainWindow::loadRom()
 void MainWindow::on_lstBlocks_currentRowChanged(int currentRow)
 {
     ui->tiles->setSelected(currentRow);
-    ui->tiles->repaint();
     int tileY1 = ui->tiles->getY(currentRow);
     int tileY2 = tileY1+34; // both borders visible
     int viewY1 = ui->scrollArea->verticalScrollBar()->value();

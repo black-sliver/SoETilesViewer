@@ -6,6 +6,21 @@
 #include <QResizeEvent>
 #include <QPaintEvent>
 
+
+#define TILE_SIZE 32
+#define TILE_SPACE 1
+static int _cols(int w) {
+    return (w-TILE_SPACE)/(TILE_SIZE+TILE_SPACE);
+}
+static int _col(int x) {
+    // this includes left border/space and excludes right
+    return x/(TILE_SIZE+TILE_SPACE);
+}
+static int _row(int y) {
+    // this includes top border/space and excludes bottom
+    return y/(TILE_SIZE+TILE_SPACE);
+}
+
 TileView::TileView(QWidget *parent)
     : QWidget(parent)
 {
@@ -36,40 +51,87 @@ int TileView::addColorMap(const ColorMap &map)
 
 void TileView::setSelected(int index)
 {
-    _selected = index;
+    if (index == _selected) return;
+
+    int newx = getX(index);
+    int newy = getY(index);
+    int oldx = getX(_selected);
+    int oldy = getY(_selected);
+    if (_selected>=0 && index>=0) {
+        int minx = (oldx<newx) ? oldx-1 : newx-1;
+        int miny = (oldy<newy) ? oldy-1 : newy-1;
+        int maxx = (oldx>newx) ? oldx+34 : newx+34;
+        int maxy = (oldy>newy) ? oldy+34 : newy+34;
+        _selected = index;
+        repaint(minx, miny, maxx-minx, maxy-miny);
+    } else if (index >= 0) {
+        _selected = index;
+        repaint(newx-1, newy-1, 35, 35);
+    } else if (_selected >= 0) {
+        _selected = index;
+        repaint(oldx-1, oldy-1, 35, 35);
+    }
 }
 
+int TileView::getX(int index) const
+{
+    int cols = _cols(width());
+    int col = index%cols;
+    return col*33;
+}
 int TileView::getY(int index) const
 {
-    int w = width();
-    int cols = (w-1)/(33);
+    int cols = _cols(width());
     int row = index/cols;
     return row*33;
 }
-
-
+int TileView::getIndex(int x, int y) const
+{
+    int cols = _cols(width());
+    int row = _row(y);
+    int col = _col(x);
+    if (col>=cols) return -1;
+    int idx = row*cols + col;
+    if (idx>=_spriteBlocks.size()) return -1;
+    return idx;
+}
+void TileView::mousePressEvent(QMouseEvent * ev)
+{
+    int index = getIndex(ev->x(), ev->y());
+    setSelected(index);
+    emit(selectionChanged(index));
+}
 void TileView::resizeEvent(QResizeEvent *ev)
 {
-    //if (ev->size().width() != width())
-    _layoutChanged = true;
+    int oldcols = _cols(ev->oldSize().width());
+    int newcols = _cols(ev->size().width());
+    if ( oldcols != newcols ) {
+        int newrows =(_spriteBlocks.count()+newcols-1)/newcols;
+        int newh = 1+33*newrows;
+        this->setMinimumHeight(newh);
+        _layoutChanged = true;
+    }
 }
 void TileView::paintEvent(QPaintEvent* ev)
 {
-    //QScrollArea* scroll = dynamic_cast<QScrollArea*>(this->parentWidget()); // this returns NULL
-    int off = 0;
-    //if (scroll && scroll->verticalScrollBar()) off = scroll->verticalScrollBar()->value();
     int w = width();
     int h = height();
-    int cols = (w-1)/(33);
+    int cols = _cols(w);
 
     if (!_pixels || !_image || _layoutChanged) {
-        qDebug("reshape: %dx%d, scroll %d\n", w, h, off);
+        qDebug("reshape: %dx%d\n", w, h);
 
         int rows =(_spriteBlocks.count()+cols-1)/cols;
-        this->setMinimumHeight(1+33*rows);
+        int newh = 1+33*rows;
+        if (newh > this->minimumHeight()) {
+            this->setMinimumHeight(newh);
+            repaint();
+            return;
+        } else {
+            this->setMinimumHeight(newh);
+        }
         _layoutChanged = false;
 
-        //QWidget::paintEvent(ev);
         int x = 1;
         int y = 1;
         if (_pixels) delete[] _pixels;
@@ -93,7 +155,7 @@ void TileView::paintEvent(QPaintEvent* ev)
                 }
             }
             x += 33;
-            if (x+32 > w) {
+            if (x+33 > w) {
                 x = 1;
                 y += 33;
             }
@@ -103,7 +165,6 @@ void TileView::paintEvent(QPaintEvent* ev)
         _image = new QImage((uchar*)_pixels, w, h, QImage::Format_ARGB32);
     }
     QPainter painter(this);
-    qDebug("redraw: %dx%d, scroll %d\n", w, h, off);
     if (_selected>=0) {
         int row = _selected/cols;
         int col = _selected%cols;

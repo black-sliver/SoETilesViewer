@@ -23,6 +23,7 @@ private slots:
     void on_btnLoad_clicked();
 
     void on_lstBlocks_currentRowChanged(int currentRow);
+    void on_tiles_selectionChanged(int index);
 
 private:
     Ui::MainWindow *ui;

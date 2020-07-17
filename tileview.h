@@ -18,11 +18,17 @@ public:
     void add(const SpriteBlock& block);
     int addColorMap(const ColorMap& map);
     void setSelected(int index);
+    int getX(int index) const;
     int getY(int index) const;
+    int getIndex(int x, int y) const;
+
+signals:
+    void selectionChanged(int index);
 
 private:
     virtual void resizeEvent(QResizeEvent*);
     virtual void paintEvent(QPaintEvent*);
+    virtual void mousePressEvent(QMouseEvent*);
 
     QList<SpriteBlock> _spriteBlocks;
     QVector<ColorMap> _colorMaps;
