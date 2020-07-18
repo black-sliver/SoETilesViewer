@@ -37,6 +37,23 @@ PredefinedColorMap colorMaps[] = {
     { "Copyright",{ 0, 0x39ce, 0x77bd, 0x3dfa, 0x0014, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 } },
 };
 
+
+static bool appendSuffixAskToOverwrite(QWidget* parent, QString& f, const QString& suffix,
+                                       const QString& title="Already exists")
+{
+    if (!QFileInfo(f).suffix().isEmpty()) return true; // user gave suffix
+
+    f.append(suffix);
+    QFileInfo fi(f);
+    if (fi.exists()) // file with suffix already exists. ask to overwrite
+        return QMessageBox::question(parent, title,
+                                     QStringLiteral("%1 already exists.\nDo you want to replace it?")
+                                     .arg(fi.fileName())
+                                     ) == QMessageBox::Yes;
+    return true; // file with suffix does not yet exist
+}
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -96,6 +113,7 @@ bool MainWindow::loadRom()
             QString f = QFileInfo(srcFi.dir(), srcFi.baseName()).filePath() + "-modified.sfc";
             f = QFileDialog::getSaveFileName(this, "Save copy", f, SFC_FILTER);
             if (f.isEmpty()) return false;
+            if (!appendSuffixAskToOverwrite(this, f, ".sfc", "Savec copy")) return false;
             if (f == _file) { QMessageBox::warning(this, "Error", "Filename has to be different..."); return false; }
             if (!_rom->saveAs(f)) {
                 QMessageBox::warning(this, "Error", "Could not save copy!");
@@ -191,17 +209,17 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
     connect(&aExport, &QAction::triggered, this, [this,index](){
         QString f = QFileInfo(_exportdir, QString::number(index) + ".png").filePath();
         f = QFileDialog::getSaveFileName(this, "Export sprite block", f, PNG_FILTER);
-        if (!f.isEmpty()) {
-            _exportdir = QFileInfo(f).dir().path();
-            auto pixels = _spriteBlocks[index].getPixels();
-            QImage img = QImage(QSize(16,16), QImage::Format_Indexed8);
-            img.setColorTable(ui->tiles->itemColorMap(index).toQVector());
-            for (int y=0; y<16; y++)
-                for (int x=0; x<16; x++)
-                    img.setPixel(x, y, pixels[x+y*16]);
-            if (!img.save(f))
-                QMessageBox::warning(this, "Error", "Could not save sprite data to "+f);
-        }
+        if (f.isEmpty()) return;
+        if (!appendSuffixAskToOverwrite(this, f, ".png", "Export sprite block")) return;
+        _exportdir = QFileInfo(f).dir().path();
+        auto pixels = _spriteBlocks[index].getPixels();
+        QImage img = QImage(QSize(16,16), QImage::Format_Indexed8);
+        img.setColorTable(ui->tiles->itemColorMap(index).toQVector());
+        for (int y=0; y<16; y++)
+            for (int x=0; x<16; x++)
+                img.setPixel(x, y, pixels[x+y*16]);
+        if (!img.save(f))
+            QMessageBox::warning(this, "Error", QStringLiteral("Could not save sprite data to %1").arg(f));
     });
 
     QAction aReplace("Replace", this);
