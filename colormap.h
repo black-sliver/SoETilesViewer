@@ -11,7 +11,7 @@ struct ColorMap;
 struct ColorMap {
     QRgb c[16];
 
-    static ColorMap FromSnes(uint16_t snescolors[16], bool transparent=true) {
+    static ColorMap FromSnes(const uint16_t snescolors[16], bool transparent=true) {
         ColorMap map;
         for (uint8_t i=0; i<16; i++) {
             uint16_t c16=snescolors[i];

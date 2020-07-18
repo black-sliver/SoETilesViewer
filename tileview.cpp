@@ -7,20 +7,17 @@
 #include <QPaintEvent>
 
 
-#define TILE_SIZE 32
-#define TILE_SPACE 1
-static int _cols(int w) {
-    return (w-TILE_SPACE)/(TILE_SIZE+TILE_SPACE);
+int TileView::_cols(int w) {
+    return (w-TILE_SPACE)/(TILE_PITCH);
 }
-static int _col(int x) {
+int TileView::_col(int x) {
     // this includes left border/space and excludes right
-    return x/(TILE_SIZE+TILE_SPACE);
+    return x/TILE_PITCH;
 }
-static int _row(int y) {
+int TileView::_row(int y) {
     // this includes top border/space and excludes bottom
-    return y/(TILE_SIZE+TILE_SPACE);
+    return y/TILE_PITCH;
 }
-static const int MIN_H = (TILE_SPACE+TILE_SIZE+TILE_SPACE);
 
 TileView::TileView(QWidget *parent)
     : QWidget(parent)
@@ -45,7 +42,7 @@ void TileView::clear()
     _image = NULL;
 
     this->repaint();
-    this->setMinimumWidth(33);
+    this->setMinimumWidth(MIN_H);
 }
 
 void TileView::add(const SpriteBlock& block)
@@ -108,18 +105,18 @@ void TileView::setSelected(int index)
     int oldx = itemX(_selected);
     int oldy = itemY(_selected);
     if (_selected>=0 && index>=0) {
-        int minx = (oldx<newx) ? oldx-1 : newx-1;
-        int miny = (oldy<newy) ? oldy-1 : newy-1;
-        int maxx = (oldx>newx) ? oldx+34 : newx+34;
-        int maxy = (oldy>newy) ? oldy+34 : newy+34;
+        int minx = ((oldx<newx) ? oldx : newx);
+        int miny = ((oldy<newy) ? oldy : newy);
+        int maxx = ((oldx>newx) ? oldx : newx)+TILE_OUTER_SIZE;
+        int maxy = ((oldy>newy) ? oldy : newy)+TILE_OUTER_SIZE;
         _selected = index;
         repaint(minx, miny, maxx-minx, maxy-miny);
     } else if (index >= 0) {
         _selected = index;
-        repaint(newx-1, newy-1, 35, 35);
+        repaint(newx, newy, TILE_OUTER_SIZE, TILE_OUTER_SIZE);
     } else if (_selected >= 0) {
         _selected = index;
-        repaint(oldx-1, oldy-1, 35, 35);
+        repaint(oldx, oldy, TILE_OUTER_SIZE, TILE_OUTER_SIZE);
     }
 }
 
@@ -127,13 +124,13 @@ int TileView::itemX(int index) const
 {
     int cols = _cols(width());
     int col = index%cols;
-    return col*33;
+    return col*TILE_PITCH;
 }
 int TileView::itemY(int index) const
 {
     int cols = _cols(width());
     int row = index/cols;
-    return row*33;
+    return row*TILE_PITCH;
 }
 int TileView::itemIndex(int x, int y) const
 {
@@ -157,7 +154,7 @@ void TileView::resizeEvent(QResizeEvent *ev)
     int newcols = _cols(ev->size().width());
     if ( oldcols != newcols ) {
         int newrows =(_spriteBlocks.count()+newcols-1)/newcols;
-        int newh = 1+33*newrows;
+        int newh = TILE_SPACE+TILE_PITCH*newrows;
         this->setMinimumHeight(newh);
         _layoutChanged = true;
     }
@@ -177,7 +174,7 @@ void TileView::paintEvent(QPaintEvent* ev)
         qDebug("reshape: %dx%d\n", w, h);
 
         int rows =(_spriteBlocks.count()+cols-1)/cols;
-        int newh = 1+33*rows;
+        int newh = TILE_SPACE+TILE_PITCH*rows;
         if (newh < MIN_H) newh=MIN_H;
         if (newh > this->minimumHeight()) {
             this->setMinimumHeight(newh);
@@ -189,8 +186,8 @@ void TileView::paintEvent(QPaintEvent* ev)
         _layoutChanged = false;
         _mapsChanged = false;
 
-        int x = 1;
-        int y = 1;
+        int x = TILE_SPACE;
+        int y = TILE_SPACE;
         if (_pixels) delete[] _pixels;
         _pixels = new QRgb[w*h];
 
@@ -211,12 +208,12 @@ void TileView::paintEvent(QPaintEvent* ev)
                     pixels[(xd+1) + (yd+1)*w] = map.c[c];
                 }
             }
-            x += 33;
-            if (x+33 > w) {
-                x = 1;
-                y += 33;
+            x += TILE_PITCH;
+            if (x+TILE_PITCH > w) {
+                x = TILE_SPACE;
+                y += TILE_PITCH;
             }
-            if (y+32 > h) break; // out of space
+            if (y+TILE_SIZE > h) break; // out of space
         }
         if (_image) delete _image;
         _image = new QImage((uchar*)_pixels, w, h, QImage::Format_ARGB32);
@@ -225,9 +222,10 @@ void TileView::paintEvent(QPaintEvent* ev)
     if (_selected>=0) {
         int row = _selected/cols;
         int col = _selected%cols;
-        int x1=col*33, x2=x1+33, y1=row*33, y2=y1+33;
+        int x1=col*TILE_PITCH, x2=x1+TILE_PITCH, y1=row*TILE_PITCH, y2=y1+TILE_PITCH;
         painter.setPen(QColor(0xff66aaff));
-        painter.fillRect(x1, y1, 34, 34, QColor(0xff66aaff));
+        painter.fillRect(x1, y1, TILE_OUTER_SIZE, TILE_OUTER_SIZE,
+                         QColor(0xff66aaff));
         painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
         painter.drawLine(x1, y1, x2, y1);
         painter.drawLine(x1, y2, x2, y2);

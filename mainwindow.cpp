@@ -20,10 +20,10 @@ struct PredefinedColorMap {
 };
 
 
-#define SFC_FILTER "SNES ROM (*.sfc);;All Files (*)"
-#define PNG_FILTER "PNG Image (*.png);;All Files (*)"
+constexpr auto SFC_FILTER = "SNES ROM (*.sfc);;All Files (*)";
+constexpr auto PNG_FILTER = "PNG Image (*.png);;All Files (*)";
 
-PredefinedColorMap colorMaps[] = {
+constexpr PredefinedColorMap colorMaps[] = {
     { "Boy",      { 0, 0x7fbc, 0x4edf, 0x2dba, 0x1913, 0x1489, 0x7eaa, 0x7923, 0x5465, 0x02bf, 0x059c, 0x08f6, 0x07ea, 0x0287, 0x1885, 0x0000 } },
     { "Act0 Dog", { 0, 0x7fde, 0x52d8, 0x4253, 0x35f0, 0x298d, 0x62f7, 0x4e73, 0x4210, 0x35ac, 0x4a10, 0x39ac, 0x2d29, 0x1cc6, 0x14a5, 0x0000 } },
     { "Act1 Dog", { 0, 0x7fbc, 0x7eaa, 0x7923, 0x4eb6, 0x1d4d, 0x3e11, 0x212a, 0x0c86, 0x0c63, 0x4534, 0x2cf4, 0x24cd, 0x10aa, 0x1063, 0x0000 } },
@@ -267,7 +267,7 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
             ui->tiles->set(index, _spriteBlocks[index]);
             int x = ui->tiles->itemX(index);
             int y = ui->tiles->itemY(index);
-            ui->tiles->repaint(x-1, y-1, 35, 35);
+            ui->tiles->repaint(x, y, TileView::TILE_OUTER_SIZE, TileView::TILE_OUTER_SIZE);
             qDebug("imported %s -> %d\n", f.toUtf8().data(), index);
             if (notYetWorkingCopy && _willBecomeWorkingCopy) {
                 _workingCopies.append(_file);
@@ -286,16 +286,17 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
 void MainWindow::on_lstBlocks_currentRowChanged(int currentRow)
 {
     ui->tiles->setSelected(currentRow);
+    int tileH = TileView::TILE_OUTER_SIZE;
     int tileY1 = ui->tiles->itemY(currentRow);
-    int tileY2 = tileY1+34; // both borders visible
+    int tileY2 = tileY1+tileH; // both borders visible
     int viewY1 = ui->scrollArea->verticalScrollBar()->value();
     int viewY2 = viewY1+ui->scrollArea->viewport()->height();
     if (tileY1<viewY1) {
         // scroll up until tile is visible
-        ui->scrollArea->ensureVisible(0, tileY2, 0, 34);
+        ui->scrollArea->ensureVisible(0, tileY2, 0, tileH);
     } else if (tileY2>viewY2) {
         // scroll down until tile is visible
-        ui->scrollArea->ensureVisible(0, tileY1, 0, 34);
+        ui->scrollArea->ensureVisible(0, tileY1, 0, tileH);
     }
 }
 
