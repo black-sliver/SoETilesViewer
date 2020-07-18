@@ -2,7 +2,9 @@
 #define COLORMAP_H
 
 #include <QRgb>
+#include <QVector>
 #include <stdint.h>
+#include <string.h> // memcmp
 
 struct ColorMap;
 
@@ -21,6 +23,29 @@ struct ColorMap {
         if (transparent) map.c[0] = 0;
         return map;
     };
+    ColorMap() { c[0]=0; for (uint8_t i=1; i<16; i++) c[i]=0xff000000; }
+
+    uint8_t find(QRgb color) const
+    {
+        for (uint8_t i=0; i<16; i++)
+            if (c[i] == color || ( (color>>24)==0 && (c[i]>>24)==0) )
+                return i;
+        return (uint8_t)-1; // invalid
+    }
+    bool operator==(const ColorMap& other) const
+    {
+        return memcmp(c, other.c, sizeof(c)) == 0;
+    }
+    bool operator!=(const ColorMap& other) const
+    {
+        return !(*this == other);
+    }
+    QVector<QRgb> toQVector() const
+    {
+        QVector<QRgb> vec;
+        for (uint8_t i=0; i<16; i++) vec.push_back(c[i]);
+        return vec;
+    }
 };
 
 #endif // COLORMAP_H

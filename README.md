@@ -1,5 +1,7 @@
 # SoETilesViewer
-is a program to view (and maybe modify in the future) resources of the SNES Game Secret of Evermore.
+is a program to view and modify resources of the SNES Game Secret of Evermore.
 
 * Only US/NTSC version
-* Only header-less, uncompressed ROM supported
+* Only uncompressed ROM supported (unpack ZIP first)
+* Use right-click on tiles to import/export
+* Make sure to use the same palette when exporting and importing

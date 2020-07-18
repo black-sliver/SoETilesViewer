@@ -24,13 +24,20 @@ private slots:
 
     void on_lstBlocks_currentRowChanged(int currentRow);
     void on_tiles_selectionChanged(int index);
+    void on_tiles_customContextMenuRequested(const QPoint &pos);
+    void on_cbxDefaultColorMap_activated(int index);
 
 private:
     Ui::MainWindow *ui;
     QString _file;
     QString _lastopen;
+    QString _exportdir;
+    QStringList _workingCopies;
+    QStringList _warnedCopies;
+    bool _willBecomeWorkingCopy = false;
     Rom* _rom = NULL;
     QList<SpriteBlock> _spriteBlocks;
+    QString _baseTitle;
     bool loadRom();
 };
 #endif // MAINWINDOW_H

@@ -15,12 +15,21 @@ public:
     TileView(QWidget *parent = 0);
     ~TileView();
 
+    void clear();
+
     void add(const SpriteBlock& block);
+    void set(int index, const SpriteBlock& block);
+
     int addColorMap(const ColorMap& map);
+    void setColorMap(int index, const ColorMap& map);
+    ColorMap colorMap(int index) const;
+    ColorMap itemColorMap(int index) const;
+
     void setSelected(int index);
-    int getX(int index) const;
-    int getY(int index) const;
-    int getIndex(int x, int y) const;
+    int selected() const;
+    int itemX(int index) const;
+    int itemY(int index) const;
+    int itemIndex(int x, int y) const;
 
 signals:
     void selectionChanged(int index);
@@ -34,6 +43,7 @@ private:
     QVector<ColorMap> _colorMaps;
     QMap<int,int> _colorMapMap;
     bool _layoutChanged = false;
+    bool _mapsChanged = false;
     QRgb* _pixels = NULL;
     QImage* _image = NULL;
     int _selected = -1;

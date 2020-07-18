@@ -20,19 +20,32 @@ static int _row(int y) {
     // this includes top border/space and excludes bottom
     return y/(TILE_SIZE+TILE_SPACE);
 }
+static const int MIN_H = (TILE_SPACE+TILE_SIZE+TILE_SPACE);
 
 TileView::TileView(QWidget *parent)
     : QWidget(parent)
 {
-    this->setMinimumWidth(33);
+    this->setMinimumWidth(MIN_H);
 }
 
 TileView::~TileView()
 {
+    clear();
+}
+
+void TileView::clear()
+{
+    _spriteBlocks.clear();
+    _colorMaps.clear();
+    _colorMapMap.clear();
+
     if (_pixels) delete[] _pixels;
     _pixels = NULL;
     if (_image) delete _image;
     _image = NULL;
+
+    this->repaint();
+    this->setMinimumWidth(33);
 }
 
 void TileView::add(const SpriteBlock& block)
@@ -41,22 +54,59 @@ void TileView::add(const SpriteBlock& block)
     _spriteBlocks.append(block);
     _layoutChanged = true;
 }
+void TileView::set(int index, const SpriteBlock& block)
+{
+    // TODO: extract data from block instead of storing the block
+    _spriteBlocks[index] = block;
+    _layoutChanged = true;
+}
 
 int TileView::addColorMap(const ColorMap &map)
 {
-    int idx = _colorMaps.length();
+    int index = _colorMaps.length();
     _colorMaps.append(map);
-    return idx;
+    if (index==0) _mapsChanged = true;
+    return index;
 }
 
+ColorMap TileView::colorMap(int index) const
+{
+    if (index>_colorMaps.length()) return ColorMap();
+    return _colorMaps[index];
+}
+
+ColorMap TileView::itemColorMap(int index) const
+{
+    if (index>_spriteBlocks.length()) return ColorMap();
+    auto it = _colorMapMap.find(index);
+    if (it == _colorMapMap.end())
+        return colorMap(0);
+    return colorMap(it.value());
+}
+
+void TileView::setColorMap(int index, const ColorMap &map)
+{
+    bool mapInUse = index<_colorMaps.length(); // TODO: actually find out if it's in use
+    bool needRefresh = mapInUse && (map != _colorMaps[index]);
+    _colorMaps[index] = map;
+    if (needRefresh) {
+        _mapsChanged = true;
+        repaint();
+    }
+}
+
+int TileView::selected() const
+{
+    return _selected;
+}
 void TileView::setSelected(int index)
 {
     if (index == _selected) return;
 
-    int newx = getX(index);
-    int newy = getY(index);
-    int oldx = getX(_selected);
-    int oldy = getY(_selected);
+    int newx = itemX(index);
+    int newy = itemY(index);
+    int oldx = itemX(_selected);
+    int oldy = itemY(_selected);
     if (_selected>=0 && index>=0) {
         int minx = (oldx<newx) ? oldx-1 : newx-1;
         int miny = (oldy<newy) ? oldy-1 : newy-1;
@@ -73,19 +123,19 @@ void TileView::setSelected(int index)
     }
 }
 
-int TileView::getX(int index) const
+int TileView::itemX(int index) const
 {
     int cols = _cols(width());
     int col = index%cols;
     return col*33;
 }
-int TileView::getY(int index) const
+int TileView::itemY(int index) const
 {
     int cols = _cols(width());
     int row = index/cols;
     return row*33;
 }
-int TileView::getIndex(int x, int y) const
+int TileView::itemIndex(int x, int y) const
 {
     int cols = _cols(width());
     int row = _row(y);
@@ -97,7 +147,7 @@ int TileView::getIndex(int x, int y) const
 }
 void TileView::mousePressEvent(QMouseEvent * ev)
 {
-    int index = getIndex(ev->x(), ev->y());
+    int index = itemIndex(ev->x(), ev->y());
     setSelected(index);
     emit(selectionChanged(index));
 }
@@ -118,11 +168,17 @@ void TileView::paintEvent(QPaintEvent* ev)
     int h = height();
     int cols = _cols(w);
 
-    if (!_pixels || !_image || _layoutChanged) {
+    if (_colorMaps.empty() || _spriteBlocks.empty()) {
+        QPainter painter(this);
+        painter.eraseRect(ev->rect());
+        return;
+    }
+    if (!_pixels || !_image || _layoutChanged || _mapsChanged) {
         qDebug("reshape: %dx%d\n", w, h);
 
         int rows =(_spriteBlocks.count()+cols-1)/cols;
         int newh = 1+33*rows;
+        if (newh < MIN_H) newh=MIN_H;
         if (newh > this->minimumHeight()) {
             this->setMinimumHeight(newh);
             repaint();
@@ -131,6 +187,7 @@ void TileView::paintEvent(QPaintEvent* ev)
             this->setMinimumHeight(newh);
         }
         _layoutChanged = false;
+        _mapsChanged = false;
 
         int x = 1;
         int y = 1;
