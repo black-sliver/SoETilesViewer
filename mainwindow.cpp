@@ -274,7 +274,7 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
             if (notYetWorkingCopy && _willBecomeWorkingCopy) {
                 _workingCopies.append(_file);
                 QSettings settings;
-                settings.setValue("workingcopies", _file);
+                settings.setValue("workingcopies", _workingCopies);
                 qDebug("set file to be a working copy. no future warnings.\n");
             }
         }
