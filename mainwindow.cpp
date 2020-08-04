@@ -288,6 +288,7 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
 void MainWindow::on_lstBlocks_currentRowChanged(int currentRow)
 {
     ui->tiles->setSelected(currentRow);
+    if (currentRow<0) return;
     int tileH = TileView::TILE_OUTER_SIZE;
     int tileY1 = ui->tiles->itemY(currentRow);
     int tileY2 = tileY1+tileH; // both borders visible
