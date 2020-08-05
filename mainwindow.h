@@ -21,6 +21,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    bool eventFilter(QObject* obj, QEvent* event);
+
 private slots:
     void on_btnLoad_clicked();
 

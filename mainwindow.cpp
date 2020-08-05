@@ -11,6 +11,7 @@
 #include <QMenu>
 #include <QAction>
 #include <QFileInfo>
+#include <QKeyEvent>
 #include "colormap.h"
 
 
@@ -78,6 +79,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lstSprites->setFont(fixedFont);
     ui->lstSpriteChunks->setFont(fixedFont);
 
+    // add shortcut text and filter for tab switching
+    for (int i=0; i<ui->tabWidget->count(); i++) {
+        const QString s = (i==0) ? " [Ctrl+1]" : (" ["+QString::number(i+1)+"]");
+        ui->tabWidget->setTabText(i, ui->tabWidget->tabText(i) + s);
+    }
+    installEventFilter(this);
+
     for (auto& map: colorMaps) {
         ui->cbxDefaultColorMap->addItem(map.name);
         ui->cbxDefaultColorMap2->addItem(map.name);
@@ -110,6 +118,45 @@ MainWindow::~MainWindow()
     if (settings.value("exportdir") != _exportdir)
         settings.setValue("exportdir", _exportdir);
     delete ui;
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type()==QEvent::KeyPress) {
+        QKeyEvent* key = static_cast<QKeyEvent*>(event);
+        if (!(key->modifiers() & Qt::ControlModifier))
+            return QObject::eventFilter(obj, event);
+        switch (key->key())
+        {
+        case Qt::Key_1:
+        case Qt::Key_2:
+        case Qt::Key_3:
+        case Qt::Key_4:
+        case Qt::Key_5:
+        case Qt::Key_6:
+        case Qt::Key_7:
+        case Qt::Key_8:
+        case Qt::Key_9:
+            ui->tabWidget->setCurrentIndex(key->key()-Qt::Key_1);
+                break;
+        case Qt::Key_0:
+            ui->tabWidget->setCurrentIndex(9);
+                break;
+        case Qt::Key_Tab:
+        case Qt::Key_Backtab:
+            if ((key->key()==Qt::Key_Backtab || (key->modifiers() & Qt::ShiftModifier)) && ui->tabWidget->currentIndex()==0)
+                ui->tabWidget->setCurrentIndex(ui->tabWidget->count()-1);
+            else if (key->key()==Qt::Key_Backtab || (key->modifiers() & Qt::ShiftModifier))
+                ui->tabWidget->setCurrentIndex((ui->tabWidget->currentIndex()-1)%ui->tabWidget->count());
+            else
+                ui->tabWidget->setCurrentIndex((ui->tabWidget->currentIndex()+1)%ui->tabWidget->count());
+            break;
+        default:
+            return QObject::eventFilter(obj, event);
+        }
+        return true;
+    }
+    return QObject::eventFilter(obj, event);
 }
 
 
