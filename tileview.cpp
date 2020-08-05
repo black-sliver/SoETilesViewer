@@ -85,7 +85,9 @@ void TileView::setColorMap(int index, const ColorMap &map)
 {
     bool mapInUse = index<_colorMaps.length(); // TODO: actually find out if it's in use
     bool needRefresh = mapInUse && (map != _colorMaps[index]);
-    _colorMaps[index] = map;
+    if (index > _colorMaps.length()) return;
+    else if (index == _colorMaps.length()) addColorMap(map);
+    else _colorMaps[index] = map;
     if (needRefresh) {
         _mapsChanged = true;
         repaint();
