@@ -31,6 +31,8 @@ public:
     int itemY(int index) const;
     int itemIndex(int x, int y) const;
 
+    void setBackground(QRgb color);
+
     static constexpr int TILE_SIZE = 32;
     static constexpr int TILE_SPACE = 1;
     static constexpr int TILE_PITCH = TILE_SIZE+TILE_SPACE;
@@ -52,6 +54,7 @@ private:
     QRgb* _pixels = NULL;
     QImage* _image = NULL;
     int _selected = -1;
+    QRgb _bgColor = 0;
 
     static constexpr int MIN_H = TILE_OUTER_SIZE;
     static int _cols(int w);

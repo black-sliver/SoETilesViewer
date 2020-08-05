@@ -144,6 +144,13 @@ int TileView::itemIndex(int x, int y) const
     if (idx>=_spriteBlocks.size()) return -1;
     return idx;
 }
+void TileView::setBackground(QRgb color)
+{
+    if (_bgColor==color || (_bgColor>>24==0 && color>>24==0)) return;
+    _bgColor = color;
+    repaint();
+}
+
 void TileView::mousePressEvent(QMouseEvent * ev)
 {
     int index = itemIndex(ev->x(), ev->y());
@@ -221,6 +228,7 @@ void TileView::paintEvent(QPaintEvent* ev)
         _image = new QImage((uchar*)_pixels, w, h, QImage::Format_ARGB32);
     }
     QPainter painter(this);
+    if (_bgColor>>24) painter.fillRect(0,0,width(),height(),_bgColor);
     if (_selected>=0) {
         int row = _selected/cols;
         int col = _selected%cols;
