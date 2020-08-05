@@ -137,9 +137,19 @@ bool MainWindow::loadRom()
     }
 
     ui->tiles->addColorMap(ColorMap::FromSnes(colorMaps[ui->cbxDefaultColorMap->currentIndex()].snescolors));
+    // 16x16 blocks
     for (int i=0; i<4854; i++) { // TODO: how many are there actually?
         SpriteBlock block(i, _rom);
         if (_rom->mapaddr(block.dataaddr) >= 0x300000-8 /*3MB*/) continue;
+        _spriteBlocks.append(block);
+        ui->lstBlocks->addItem(block.toString());
+        ui->tiles->add(block);
+    }
+    _largeBlocksCount = _spriteBlocks.size();
+    // 8x8 blocks
+    for (int i=0; i<6265; i++) { // TODO: how many are there actually?
+        SpriteBlock block(i, _rom, 8);
+        if (_rom->mapaddr(block.dataaddr) >= 0x300000-2 /*3MB*/) continue;
         _spriteBlocks.append(block);
         ui->lstBlocks->addItem(block.toString());
         ui->tiles->add(block);
@@ -182,19 +192,19 @@ QString toString(const QVector<QRgb> colors)
     return res;
 }
 
-QString __verifyImage(const QImage& img)
+QString __verifyImage(const QImage& img, int expectedSize)
 {
     if (img.isNull()) return "Invalid image";
-    if (img.width()!=16 || img.height()!=16) return "Invalid size";
+    if (img.width()!=expectedSize || img.height()!=expectedSize) return "Invalid size";
 #if 0 // since I can't find a drawing program that keeps palette in takt, we try to match colors later on instead
     if (img.pixelFormat() != QImage::toPixelFormat(QImage::Format_Indexed8)) return "Image has to be indexed/use palette";
     if (img.colorCount() != -1/*16*/) return "Invalid palette/color count: " + QString::number(img.colorCount()) + "\n" + toString(img.colorTable());
 #endif
     return "";
 }
-bool verifyImage(const QImage& img, QString* err=NULL)
+bool verifyImage(const QImage& img, int expectedSize, QString* err=NULL)
 {
-    auto msg = __verifyImage(img);
+    auto msg = __verifyImage(img, expectedSize);
     if (err) *err = msg;
     return msg.isEmpty();
 }
@@ -215,11 +225,12 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
         if (!appendSuffixAskToOverwrite(this, f, ".png", "Export sprite block")) return;
         _exportdir = QFileInfo(f).dir().path();
         auto pixels = _spriteBlocks[index].getPixels();
-        QImage img = QImage(QSize(16,16), QImage::Format_Indexed8);
+        int size = _spriteBlocks[index].size;
+        QImage img = QImage(QSize(size,size), QImage::Format_Indexed8);
         img.setColorTable(ui->tiles->itemColorMap(index).toQVector());
-        for (int y=0; y<16; y++)
-            for (int x=0; x<16; x++)
-                img.setPixel(x, y, pixels[x+y*16]);
+        for (int y=0; y<size; y++)
+            for (int x=0; x<size; x++)
+                img.setPixel(x, y, pixels[x+y*size]);
         if (!img.save(f))
             QMessageBox::warning(this, "Error", QStringLiteral("Could not save sprite data to %1").arg(f));
     });
@@ -238,14 +249,15 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
             _exportdir = QFileInfo(f).dir().path();
             QImage img(f);
             QString err;
-            if (!verifyImage(img, &err)) {
+            if (!verifyImage(img, _spriteBlocks[index].size, &err)) {
                 QMessageBox::critical(this, "Error", err);
                 return;
             }
             ColorMap colormap = ui->tiles->itemColorMap(index);
             QByteArray pixels;
-            for (int y=0; y<16; y++) {
-                for (int x=0; x<16; x++) {
+            int size = img.width();
+            for (int y=0; y<size; y++) {
+                for (int x=0; x<size; x++) {
                     QRgb c = img.pixel(x,y);
                     uint8_t colorindex = colormap.find(c);
                     if (colorindex>15) {

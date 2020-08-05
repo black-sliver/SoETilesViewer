@@ -197,11 +197,11 @@ void TileView::paintEvent(QPaintEvent* ev)
         for (int i=0; i<_spriteBlocks.size(); i++) {
             const SpriteBlock& block = _spriteBlocks[i];
             QByteArray src = block.getPixels();
-            for (int ys=0; ys<16; ys++) {
-                for (int xs=0; xs<16; xs++) {
+            for (int ys=0; ys<block.size; ys++) {
+                for (int xs=0; xs<block.size; xs++) {
                     int xd = x + 2*(xs);
                     int yd = y + 2*(ys);
-                    uint8_t c = src[xs+ys*16];
+                    uint8_t c = src[xs+ys*block.size];
                     pixels[(xd+0) + (yd+0)*w] = map.c[c];
                     pixels[(xd+0) + (yd+1)*w] = map.c[c];
                     pixels[(xd+1) + (yd+0)*w] = map.c[c];

@@ -9,6 +9,8 @@
 
 struct SpriteBlock {
     int i;
+    int size;
+
     unsigned ptraddr;
     unsigned dataaddr;
     bool compressed;
@@ -16,7 +18,7 @@ struct SpriteBlock {
     unsigned romsize;
     QByteArray pixels;
 
-    QString toString()
+    QString toString() // TODO: remove qt dependency
     {
         return QStringLiteral("#%1 -> $%2 -> $%3 %4B ").arg(i, 4, 10).arg(ptraddr, 0, 16).arg(dataaddr, 0, 16).arg(romsize, 3, 10) + (compressed ? "compressed" : "uncompressed");
     }
@@ -27,19 +29,23 @@ struct SpriteBlock {
     }
     bool setPixels(const QByteArray& newpixels)
     {
+        assert(size==8 || size==16); // TODO: implement 8x8 blocks
+        size_t subwidth = size/8;
+        size_t subblocks = subwidth*subwidth;
+
         uint8_t* d = NULL; // uncompressed snes-formatted data
-        uint8_t uncompressedData[128];
+        uint8_t uncompressedData[8*8*subblocks/2]; // 4bpp
         if (compressed) {
             d = uncompressedData;
         } else {
             d = data;
         }
-        memset(d, 0, 128);
+        memset(d, 0, sizeof(uncompressedData));
 
         int n=0;
-        for (size_t l=0; l<2; l++) { // 2 8x8 blocks in Y
+        for (size_t l=0; l<subwidth; l++) { // 1 or 2 8x8 blocks in Y
             for (size_t k=0; k<8; k++) { // 8 rows
-                for (size_t j=0; j<2; j++) { // 2 8x8 blocks in X
+                for (size_t j=0; j<subwidth; j++) { // 1 or 2 8x8 blocks in X
                     // 8 columns
                     for (int i=7; i>=0; i--) {
                         uint8_t p = newpixels[n];
@@ -54,15 +60,23 @@ struct SpriteBlock {
         }
         if (compressed) {
             QByteArray compressedData;
-            for (size_t i=0; i<128/16; i++) {
-                uint8_t b=0;
-                for (size_t j=0; j<8; j++)
-                    if (!(d[i*16+2*j] || d[i*16+2*j+1])) b|= (1<<j);
-                compressedData.append(b);
-                for (size_t j=0; j<8; j++)
-                    if (d[i*16+2*j] || d[i*16+2*j+1]) { compressedData.append(d[i*16+2*j]); compressedData.append(d[i*16+2*j+1]); }
-            }
-            if ((unsigned)compressedData.size() > romsize) return false;
+            int extraWords = 0;
+            do {
+                compressedData.clear();
+                for (size_t i=0; i<sizeof(uncompressedData)/16; i++) {
+                    uint8_t b=0;
+                    for (size_t j=0; j<8; j++)
+                        if (!(d[i*16+2*j] || d[i*16+2*j+1])) b |= (1<<j); // 1 status bit per word of data, 1=compress-away
+                    for (size_t j=0; j<8; j++)
+                        if (extraWords>0 && (b & (1<<j))) { b &= ~(1<<j); extraWords--; } // don't compress away to fill original size
+                    compressedData.append(b); // append 8 status bits as byte
+                    for (size_t j=0; j<8; j++) // append words that are not compressed away
+                        if (!(b & (1<<j))) { compressedData.append(d[i*16+2*j]); compressedData.append(d[i*16+2*j+1]); }
+                }
+                extraWords = ((int)romsize - (int)compressedData.size())/2; // additional words to NOT compress-away to fill original size
+                qDebug("Compression pass finished with extrawords = %d\n", extraWords);
+            } while (extraWords > 0);
+            if ((unsigned)compressedData.size() > romsize) return false; // won't fit
             memset(data, 0, romsize); // clear free data in case we shrink it
             memcpy(data, compressedData.data(), compressedData.size());
         }
@@ -78,16 +92,20 @@ struct SpriteBlock {
     }
 
 private:
-    static QByteArray loadPixels(const uint8_t* data, bool compressed, const uint8_t** next=NULL)
+    static QByteArray loadPixels(const uint8_t* data, bool compressed, const uint8_t** next=NULL, int size=16)
     {
+        assert(size == 8 || size == 16);
+        size_t subwidth = size/8;
+        size_t subblocks = subwidth*subwidth;
+
         QByteArray res;
         const uint8_t* d = NULL;
-        uint8_t uncompressed[128];
+        uint8_t uncompressed[8*8*subblocks/2]; // 4bpp
         if (compressed) {
             memset(uncompressed, 0, sizeof(uncompressed));
             const uint8_t* din = data;
             uint8_t* dout = uncompressed;
-            for (size_t i=0; i<128/2/8; i++) { // 1 bit per output word
+            for (size_t i=0; i<sizeof(uncompressed)/2/8; i++) { // 1 bit per output word
                 uint8_t bits = *din; din++;
                 for (uint8_t bp=0; bp<8; bp++) {
                     uint8_t bit = bits&1; bits>>=1;
@@ -104,11 +122,11 @@ private:
         }
         else {
             d = data;
-            if (next) *next = data+128;
+            if (next) *next = data+sizeof(uncompressed);
         }
-        for (size_t l=0; l<2; l++) { // 2 8x8 blocks in Y
+        for (size_t l=0; l<subwidth; l++) { // 1 or 2 8x8 blocks in Y
             for (size_t k=0; k<8; k++) { // 8 rows
-                for (size_t j=0; j<2; j++) { // 2 8x8 blocks in X
+                for (size_t j=0; j<subwidth; j++) { // 1 or 2 8x8 blocks in X
                     // 8 columns
                     for (int i=7; i>=0; i--) {
                         uint8_t p=0;
@@ -125,18 +143,29 @@ private:
     }
 
 public:
-    SpriteBlock(int i, Rom* rom) {
+    SpriteBlock(int i, Rom* rom, int size=16) {
         this->i = i;
-        ptraddr = 0xec0000 + i*3;
-        dataaddr = rom->read24(ptraddr);
-        compressed = (dataaddr>>23);
-        dataaddr &= ~(1<<23);
-        dataaddr += 0xd90000;
+        this->size = size;
+        if (size==16) { // 16x16 blocks
+            ptraddr = 0xec0000 + i*3;
+            dataaddr = rom->read24(ptraddr);
+            compressed = (dataaddr>>23);
+            dataaddr &= ~(1<<23);
+            dataaddr += 0xd90000;
+        } else if (size==8) { // 8x8 blocks
+            ptraddr = 0xd80000 + i*3;
+            dataaddr = rom->read24(ptraddr);
+            compressed = (dataaddr>>23);
+            dataaddr &= ~(1<<23);
+            dataaddr += 0xd10000;
+        } else {
+            assert(false);
+        }
         romsize = 0;
-        if (compressed) rom->readBlock(this->dataaddr, data, sizeof(data));
-        else rom->readBlock(dataaddr, data, 128);
+        if (compressed) rom->readBlock(this->dataaddr, data, size==16 ? sizeof(data) : sizeof(data)/4);
+        else rom->readBlock(dataaddr, data, size==16?128:128/4);
         const uint8_t* next = data;
-        pixels = loadPixels(data, compressed, &next);
+        pixels = loadPixels(data, compressed, &next, size);
         romsize = next-data;
     }
     bool save(Rom* rom) {

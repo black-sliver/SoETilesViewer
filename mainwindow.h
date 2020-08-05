@@ -37,6 +37,7 @@ private:
     bool _willBecomeWorkingCopy = false;
     Rom* _rom = NULL;
     QList<SpriteBlock> _spriteBlocks;
+    int _largeBlocksCount=0;
     QString _baseTitle;
     bool loadRom();
 };
