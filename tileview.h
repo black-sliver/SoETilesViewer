@@ -15,10 +15,9 @@ public:
     TileView(QWidget *parent = 0);
     ~TileView();
 
-    void clear();
-
-    void add(const SpriteBlock& block);
-    void set(int index, const SpriteBlock& block);
+    virtual void clear();
+    virtual void add(const SpriteBlock& block);
+    virtual void set(int index, const SpriteBlock& block);
 
     int addColorMap(const ColorMap& map);
     void setColorMap(int index, const ColorMap& map);
@@ -27,9 +26,9 @@ public:
 
     void setSelected(int index);
     int selected() const;
-    int itemX(int index) const;
-    int itemY(int index) const;
-    int itemIndex(int x, int y) const;
+    virtual int itemX(int index) const;
+    virtual int itemY(int index) const;
+    virtual int itemIndex(int x, int y) const;
 
     void setBackground(QRgb color);
 
@@ -41,7 +40,7 @@ public:
 signals:
     void selectionChanged(int index);
 
-private:
+protected:
     virtual void resizeEvent(QResizeEvent*);
     virtual void paintEvent(QPaintEvent*);
     virtual void mousePressEvent(QMouseEvent*);

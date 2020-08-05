@@ -18,6 +18,10 @@ struct PredefinedColorMap {
     const char* name;
     uint16_t snescolors[16];
 };
+struct PredefinedBackground {
+    const char* name;
+    QRgb color;
+};
 
 
 constexpr auto SFC_FILTER = "SNES ROM (*.sfc);;All Files (*)";
@@ -37,6 +41,14 @@ constexpr PredefinedColorMap colorMaps[] = {
     { "Ring Menu",  { 0, 0x7fde, 0x66f6, 0x3d8b, 0x02bf, 0x015f, 0x0010, 0x25fa, 0x1111, 0x7c1f, 0x3c0f, 0x1f47, 0x01a0, 0x7f2c, 0x7c80, 0x0420 } },
     { "Ring Cursor",{ 0, 0x7fbc, 0x4edf, 0x2dba, 0x1913, 0x1489, 0x728b, 0x6586, 0x44c3, 0x025e, 0x0537, 0x0491, 0x52d8, 0x2df0, 0x1c85, 0x0000 } },
     { "Copyright",  { 0, 0x39ce, 0x77bd, 0x3dfa, 0x0014, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 } },
+};
+
+constexpr PredefinedBackground backgrounds[] = {
+    { "None",    0x00000000 },
+    { "White",   0xffffffff },
+    { "Black",   0xff000000 },
+    { "Magenta", 0xffff00ff },
+    { "Cyan",    0xff00ffff },
 };
 
 
@@ -61,10 +73,19 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->lstBlocks->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    auto fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    ui->lstBlocks->setFont(fixedFont);
+    ui->lstSprites->setFont(fixedFont);
+    ui->lstSpriteChunks->setFont(fixedFont);
 
-    for (auto& map: colorMaps)
+    for (auto& map: colorMaps) {
         ui->cbxDefaultColorMap->addItem(map.name);
+        ui->cbxDefaultColorMap2->addItem(map.name);
+    }
+    for (auto& bg: backgrounds) {
+        ui->cbxBackground->addItem(bg.name);
+        ui->cbxBackground2->addItem(bg.name);
+    }
 
     _baseTitle = windowTitle();
 
@@ -100,8 +121,10 @@ bool MainWindow::loadRom()
     if (_rom) delete _rom;
     _rom = new Rom(_file);
 
+    ui->lstSprites->clear();
     ui->lstBlocks->clear();
     ui->tiles->clear();
+    ui->lblStats->setText("");
 
     if (!_rom->isOpen()) {
         QMessageBox::warning(this, "Error", "Could not open ROM");
@@ -157,8 +180,53 @@ bool MainWindow::loadRom()
     //ui->lstBlocks->adjustSize();
     ui->tiles->repaint();
 
-    setWindowTitle(_baseTitle + " - " + QFileInfo(_file).fileName());
+    {
+        _spriteInfos.clear();
+        ui->lstSprites->clear();
+        size_t start = 0xca0003; // for some reason this is not ca0001. maybe some info/count in first two bytes?
+        size_t addr = start;
+        bool invalidBlock = false;
+        unsigned tooLongChunk = 0;
 
+        int i=0;
+        for (i=0; i<20000; i++) {
+            if (_rom->mapaddr(addr) >= 0x300000-7 /*3MB*/) break; // end of rom
+            if (addr==0xcb17fb) qDebug("%d boy sprites", (int)_spriteInfos.size()); // end of boy sprites
+
+            SpriteInfo sprite(addr, _rom);
+            // we have a chunk with count=0 when we need to skip to the next block unless there is no room for such a block
+            if (sprite.chunks.size() == 0 || (addr&0xffff)>0x7ffd) addr = (addr&0xff0000) + 0x10001;
+            if (sprite.addr != addr) sprite = {addr,_rom}; // load from new address
+
+            if (sprite.chunks.size()>64) {
+                tooLongChunk = sprite.chunks.size();
+                break; // invalid -> done.
+            }
+
+            invalidBlock = false;
+            for (const auto& chunk: sprite.chunks) {
+                int blockIndex = chunk.flags&1 ? chunk.block : _largeBlocksCount + (int)chunk.block;
+                if (blockIndex > _spriteBlocks.count()) {
+                    invalidBlock = true;
+                    break;
+                }
+            }
+            if (invalidBlock) break;
+
+            _spriteInfos.append(sprite);
+            ui->lstSprites->addItem(sprite.toString());
+            addr += sprite.size();
+        }
+        qDebug("%d items, first addr=0x%06x, last addr=0x%06x\n", i, (unsigned)start, (unsigned)addr);
+        if (invalidBlock) qDebug("encountered invalid block\n");
+        if (tooLongChunk) qDebug("chunk too long: %u\n", tooLongChunk);
+    }
+
+    setWindowTitle(_baseTitle + " - " + QFileInfo(_file).fileName());
+    ui->lblStats->setText(QStringLiteral("%1 sprites, %2+%3 sprite blocks")
+                          .arg(_spriteInfos.size())
+                          .arg(_largeBlocksCount)
+                          .arg(_spriteBlocks.size()-_largeBlocksCount));
     return true; // OK
 }
 
@@ -178,6 +246,11 @@ void MainWindow::on_btnLoad_clicked()
 void MainWindow::on_tiles_selectionChanged(int index)
 {
     ui->lstBlocks->setCurrentRow(index);
+}
+
+void MainWindow::on_sprite_selectionChanged(int index)
+{
+    ui->lstSpriteChunks->setCurrentRow(index);
 }
 
 QString toString(const QRgb color)
@@ -317,5 +390,49 @@ void MainWindow::on_lstBlocks_currentRowChanged(int currentRow)
 
 void MainWindow::on_cbxDefaultColorMap_activated(int index)
 {
+    ui->cbxDefaultColorMap2->setCurrentIndex(index);
     ui->tiles->setColorMap(0, ColorMap::FromSnes(colorMaps[index].snescolors));
+    ui->sprite->setColorMap(0, ColorMap::FromSnes(colorMaps[index].snescolors));
+}
+
+void MainWindow::on_cbxDefaultColorMap2_activated(int index)
+{
+    ui->cbxDefaultColorMap->setCurrentIndex(index);
+    on_cbxDefaultColorMap_activated(index);
+}
+
+void MainWindow::on_cbxBackground_activated(int index)
+{
+    ui->cbxBackground2->setCurrentIndex(index);
+    if (index<0) index = 0;
+    ui->tiles->setBackground(backgrounds[index].color);
+    ui->sprite->setBackground(backgrounds[index].color);
+}
+
+void MainWindow::on_cbxBackground2_activated(int index)
+{
+    ui->cbxBackground->setCurrentIndex(index);
+    on_cbxBackground_activated(index);
+}
+
+
+
+void MainWindow::on_lstSprites_currentRowChanged(int currentRow)
+{
+    ui->lstSpriteChunks->clear();
+    ui->sprite->clear();
+    ui->sprite->addColorMap(ColorMap::FromSnes(colorMaps[ui->cbxDefaultColorMap->currentIndex()].snescolors));
+    for (const auto& chunk : _spriteInfos[currentRow].chunks) {
+        ui->lstSpriteChunks->addItem(chunk.toString());
+        if (chunk.flags&1) // 16x16 sprite block
+            ui->sprite->add(chunk, _spriteBlocks[chunk.block]);
+        else
+            ui->sprite->add(chunk, _spriteBlocks[chunk.block+_largeBlocksCount]);
+    }
+    ui->sprite->repaint();
+}
+
+void MainWindow::on_lstSpriteChunks_currentRowChanged(int currentRow)
+{
+    ui->sprite->setSelected(currentRow);
 }
