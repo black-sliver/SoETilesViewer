@@ -292,7 +292,8 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
 
     QAction aExport("Export", this);
     connect(&aExport, &QAction::triggered, this, [this,index](){
-        QString f = QFileInfo(_exportdir, QString::number(index) + ".png").filePath();
+        QString ft = (index<_largeBlocksCount) ? QString::number(index) : ("s_" + QString::number(index-_largeBlocksCount));
+        QString f = QFileInfo(_exportdir, ft + ".png").filePath();
         f = QFileDialog::getSaveFileName(this, "Export sprite block", f, PNG_FILTER);
         if (f.isEmpty()) return;
         if (!appendSuffixAskToOverwrite(this, f, ".png", "Export sprite block")) return;
@@ -316,7 +317,8 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
             if (res != QMessageBox::Yes) return;
             _willBecomeWorkingCopy = true; // mark as working copy as soon as the file gets modified
         }
-        QString f = QFileInfo(_exportdir, QString::number(index) + ".png").filePath();
+        QString ft = (index<_largeBlocksCount) ? QString::number(index) : ("s_" + QString::number(index-_largeBlocksCount));
+        QString f = QFileInfo(_exportdir, ft + ".png").filePath();
         f = QFileDialog::getOpenFileName(this, "Import sprite block", f, PNG_FILTER);
         if (!f.isEmpty()) {
             _exportdir = QFileInfo(f).dir().path();
