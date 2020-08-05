@@ -437,4 +437,10 @@ void MainWindow::on_lstSprites_currentRowChanged(int currentRow)
 void MainWindow::on_lstSpriteChunks_currentRowChanged(int currentRow)
 {
     ui->sprite->setSelected(currentRow);
+    if (currentRow>=0 && ui->lstSprites->currentRow()) {
+        // sync with other tab
+        const auto& chunk = _spriteInfos[ui->lstSprites->currentRow()].chunks[currentRow];
+        int index = (int)chunk.block + ((chunk.flags&1) ? 0 : _largeBlocksCount);
+        ui->lstBlocks->setCurrentRow(index);
+    }
 }
