@@ -8,7 +8,14 @@
 #include <QFile>
 
 
-constexpr auto BASE_SIZES = {0x100000,0x200000,0x300000,0x400000,0x500000,0x600000,0x700000,0x800000};
+#ifdef _MSC_VER
+#define initializerlistconstexpr const
+#else
+#define initializerlistconstexpr constexpr
+#endif
+
+initializerlistconstexpr
+auto BASE_SIZES = {0x100000,0x200000,0x300000,0x400000,0x500000,0x600000,0x700000,0x800000};
 constexpr auto HEADER_LEN = 512;
 
 class Rom

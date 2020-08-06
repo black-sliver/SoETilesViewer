@@ -32,15 +32,16 @@ struct SpriteBlock {
         assert(size==8 || size==16); // TODO: implement 8x8 blocks
         size_t subwidth = size/8;
         size_t subblocks = subwidth*subwidth;
+        size_t uncompressedSize = 8*8*subblocks/2;
 
         uint8_t* d = NULL; // uncompressed snes-formatted data
-        uint8_t uncompressedData[8*8*subblocks/2]; // 4bpp
+        uint8_t* uncompressedData = new uint8_t[uncompressedSize]; // 4bpp
         if (compressed) {
             d = uncompressedData;
         } else {
             d = data;
         }
-        memset(d, 0, sizeof(uncompressedData));
+        memset(d, 0, uncompressedSize);
 
         int n=0;
         for (size_t l=0; l<subwidth; l++) { // 1 or 2 8x8 blocks in Y
@@ -63,7 +64,7 @@ struct SpriteBlock {
             int extraWords = 0;
             do {
                 compressedData.clear();
-                for (size_t i=0; i<sizeof(uncompressedData)/16; i++) {
+                for (size_t i=0; i<uncompressedSize/16; i++) {
                     uint8_t b=0;
                     for (size_t j=0; j<8; j++)
                         if (!(d[i*16+2*j] || d[i*16+2*j+1])) b |= (1<<j); // 1 status bit per word of data, 1=compress-away
@@ -88,6 +89,7 @@ struct SpriteBlock {
 #else
         pixels = newpixels;
 #endif
+        delete[] uncompressedData;
         return true;
     }
 
@@ -97,15 +99,16 @@ private:
         assert(size == 8 || size == 16);
         size_t subwidth = size/8;
         size_t subblocks = subwidth*subwidth;
+        size_t uncompressedSize = 8*8*subblocks/2;
 
         QByteArray res;
         const uint8_t* d = NULL;
-        uint8_t uncompressed[8*8*subblocks/2]; // 4bpp
+        uint8_t* uncompressed = new uint8_t[uncompressedSize]; // 4bpp
         if (compressed) {
-            memset(uncompressed, 0, sizeof(uncompressed));
+            memset(uncompressed, 0, uncompressedSize);
             const uint8_t* din = data;
             uint8_t* dout = uncompressed;
-            for (size_t i=0; i<sizeof(uncompressed)/2/8; i++) { // 1 bit per output word
+            for (size_t i=0; i<uncompressedSize/2/8; i++) { // 1 bit per output word
                 uint8_t bits = *din; din++;
                 for (uint8_t bp=0; bp<8; bp++) {
                     uint8_t bit = bits&1; bits>>=1;
@@ -122,7 +125,7 @@ private:
         }
         else {
             d = data;
-            if (next) *next = data+sizeof(uncompressed);
+            if (next) *next = data+uncompressedSize;
         }
         for (size_t l=0; l<subwidth; l++) { // 1 or 2 8x8 blocks in Y
             for (size_t k=0; k<8; k++) { // 8 rows
@@ -139,6 +142,7 @@ private:
                 }
             }
         }
+        delete[] uncompressed;
         return res;
     }
 
