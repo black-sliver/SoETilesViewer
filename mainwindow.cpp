@@ -74,6 +74,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->btnLoad->setIcon(style()->standardIcon(QStyle::SP_DialogOpenButton));
     auto fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     ui->lstBlocks->setFont(fixedFont);
     ui->lstSprites->setFont(fixedFont);

@@ -29,6 +29,9 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="styleSheet">
+         <string notr="true">padding: 5px 10px 5px 10px;</string>
+        </property>
         <property name="text">
          <string>Load ROM ...</string>
         </property>
@@ -139,7 +142,7 @@
                <x>0</x>
                <y>0</y>
                <width>497</width>
-               <height>508</height>
+               <height>503</height>
               </rect>
              </property>
              <property name="sizePolicy">
