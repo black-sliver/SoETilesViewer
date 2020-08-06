@@ -29,7 +29,7 @@ struct SpriteBlock {
     }
     bool setPixels(const QByteArray& newpixels)
     {
-        assert(size==8 || size==16); // TODO: implement 8x8 blocks
+        assert(size==8 || size==16);
         size_t subwidth = size/8;
         size_t subblocks = subwidth*subwidth;
         size_t uncompressedSize = 8*8*subblocks/2;
@@ -60,7 +60,7 @@ struct SpriteBlock {
             }
         }
         if (compressed) {
-            QByteArray compressedData;
+            QByteArray compressedData; // TODO: remove qt dependency
             int extraWords = 0;
             do {
                 compressedData.clear();
@@ -75,20 +75,12 @@ struct SpriteBlock {
                         if (!(b & (1<<j))) { compressedData.append(d[i*16+2*j]); compressedData.append(d[i*16+2*j+1]); }
                 }
                 extraWords = ((int)romsize - (int)compressedData.size())/2; // additional words to NOT compress-away to fill original size
-                qDebug("Compression pass finished with extrawords = %d\n", extraWords);
             } while (extraWords > 0);
             if ((unsigned)compressedData.size() > romsize) return false; // won't fit
             memset(data, 0, romsize); // clear free data in case we shrink it
             memcpy(data, compressedData.data(), compressedData.size());
         }
-#ifdef TEST
-        pixels = loadPixels(data, compressed, NULL);
-        qDebug("size = %d vs %d\n", pixels.size(), newpixels.size());
-        qDebug("diff = %d: \n", memcmp(pixels.data(), newpixels.data(), pixels.size()));
-        assert(pixels.size() == newpixels.size() && memcmp(pixels.data(), newpixels.data(), pixels.size()) == 0);
-#else
         pixels = newpixels;
-#endif
         delete[] uncompressedData;
         return true;
     }
