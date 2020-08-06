@@ -49,3 +49,7 @@ OTHER_FILES += \
 
 DISTFILES += \
     README.md
+
+DEFINES += QUAZIP_STATIC
+include(zlib-min-q/zlib.pri)
+include(quazip/quazip.pri)

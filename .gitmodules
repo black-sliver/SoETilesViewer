@@ -1,0 +1,6 @@
+[submodule "quazip"]
+	path = quazip
+	url = https://github.com/stachenov/quazip
+[submodule "zlib-min-q"]
+	path = zlib-min-q
+	url = https://github.com/black-sliver/zlib-min-q.git
