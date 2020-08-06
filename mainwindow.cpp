@@ -25,7 +25,7 @@ struct PredefinedBackground {
 };
 
 
-constexpr auto SFC_FILTER = "SNES ROM (*.sfc);;All Files (*)";
+constexpr auto SFC_FILTER = "SNES ROM (*.sfc *.smc);;All Files (*)";
 constexpr auto PNG_FILTER = "PNG Image (*.png);;All Files (*)";
 
 constexpr PredefinedColorMap colorMaps[] = {
