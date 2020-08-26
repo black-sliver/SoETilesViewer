@@ -6,4 +6,4 @@ is a program to view and modify resources of the SNES Game Secret of Evermore.
 * Use right-click on tiles to import/export
 * Make sure to use the same palette when exporting and importing
 
-![screenshot](../screenshots/v014-blocks.png "Blocks Tab")
+![screenshot](../screenshots/v015-blocks.png "Blocks Tab")
