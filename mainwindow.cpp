@@ -12,7 +12,13 @@
 #include <QAction>
 #include <QFileInfo>
 #include <QKeyEvent>
+#include <QTextStream>
+#include <QTextBlock>
+#include <QTimer>
+#include <QDateTime>
 #include "colormap.h"
+#include "finddialog.h"
+#include "scriptparser.h"
 
 
 struct PredefinedColorMap {
@@ -79,6 +85,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lstBlocks->setFont(fixedFont);
     ui->lstSprites->setFont(fixedFont);
     ui->lstSpriteChunks->setFont(fixedFont);
+    ui->lstScripts->setFont(fixedFont);
+    ui->txtScripts->setFont(fixedFont);
+    ui->hexScripts->setFont(fixedFont);
 
     // add shortcut text and filter for tab switching
     for (int i=0; i<ui->tabWidget->count(); i++) {
@@ -86,6 +95,8 @@ MainWindow::MainWindow(QWidget *parent)
         ui->tabWidget->setTabText(i, ui->tabWidget->tabText(i) + s);
     }
     installEventFilter(this);
+    ui->txtScripts->installEventFilter(this);
+    ui->hexScripts->installEventFilter(this);
 
     for (auto& map: colorMaps) {
         ui->cbxDefaultColorMap->addItem(map.name);
@@ -111,6 +122,31 @@ MainWindow::MainWindow(QWidget *parent)
             settings.setValue("lastfile", _file);
         }
     }
+    _findFlags = (QTextDocument::FindFlags) settings.value("findflags", 0).toUInt();
+    _findRegex = settings.value("findregex", false).toBool();
+
+    // synchronize scripts zoom and scroll position between text and hex
+    QScrollBar* sbar = ui->txtScripts->verticalScrollBar();
+    connect(sbar, &QScrollBar::valueChanged, [this]() {
+        ui->hexScripts->verticalScrollBar()->setValue(ui->txtScripts->verticalScrollBar()->value());
+    } );
+    connect(sbar, &QScrollBar::rangeChanged, [this]() {
+        ui->hexScripts->setFont(ui->txtScripts->font());
+        ui->hexScripts->verticalScrollBar()->setValue(ui->txtScripts->verticalScrollBar()->value());
+    } );
+    sbar = ui->hexScripts->verticalScrollBar();
+    connect(sbar, &QScrollBar::valueChanged, [this]() {
+        ui->txtScripts->verticalScrollBar()->setValue(ui->hexScripts->verticalScrollBar()->value());
+    } );
+    connect(sbar, &QScrollBar::rangeChanged, [this]() {
+        ui->txtScripts->setFont(ui->hexScripts->font());
+        ui->txtScripts->verticalScrollBar()->setValue(ui->hexScripts->verticalScrollBar()->value());
+    } );
+
+    QTimer::singleShot(100, [this]() {
+        QApplication::processEvents();
+        on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
+    });
 }
 
 MainWindow::~MainWindow()
@@ -118,6 +154,10 @@ MainWindow::~MainWindow()
     QSettings settings;
     if (settings.value("exportdir") != _exportdir)
         settings.setValue("exportdir", _exportdir);
+    if (_findFlags != (QTextDocument::FindFlags) settings.value("findflags", 0).toUInt())
+        settings.setValue("findflags", (unsigned)_findFlags);
+    if (_findRegex != settings.value("findregex", false).toBool())
+        settings.setValue("findregex", _findRegex);
     delete ui;
 }
 
@@ -125,35 +165,69 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
     if (event->type()==QEvent::KeyPress) {
         QKeyEvent* key = static_cast<QKeyEvent*>(event);
-        if (!(key->modifiers() & Qt::ControlModifier))
-            return QObject::eventFilter(obj, event);
-        switch (key->key())
+        if ((key->modifiers() & Qt::ControlModifier) || key->key() == Qt::Key_F3||
+                key->key()==Qt::Key_Home || key->key()==Qt::Key_End)
         {
-        case Qt::Key_1:
-        case Qt::Key_2:
-        case Qt::Key_3:
-        case Qt::Key_4:
-        case Qt::Key_5:
-        case Qt::Key_6:
-        case Qt::Key_7:
-        case Qt::Key_8:
-        case Qt::Key_9:
-            ui->tabWidget->setCurrentIndex(key->key()-Qt::Key_1);
+            switch (key->key())
+            {
+            case Qt::Key_1:
+            case Qt::Key_2:
+            case Qt::Key_3:
+            case Qt::Key_4:
+            case Qt::Key_5:
+            case Qt::Key_6:
+            case Qt::Key_7:
+            case Qt::Key_8:
+            case Qt::Key_9:
+                ui->tabWidget->setCurrentIndex(key->key()-Qt::Key_1);
+                    break;
+            case Qt::Key_0:
+                ui->tabWidget->setCurrentIndex(9);
+                    break;
+            case Qt::Key_Tab:
+            case Qt::Key_Backtab:
+                if ((key->key()==Qt::Key_Backtab || (key->modifiers() & Qt::ShiftModifier)) && ui->tabWidget->currentIndex()==0)
+                    ui->tabWidget->setCurrentIndex(ui->tabWidget->count()-1);
+                else if (key->key()==Qt::Key_Backtab || (key->modifiers() & Qt::ShiftModifier))
+                    ui->tabWidget->setCurrentIndex((ui->tabWidget->currentIndex()-1)%ui->tabWidget->count());
+                else
+                    ui->tabWidget->setCurrentIndex((ui->tabWidget->currentIndex()+1)%ui->tabWidget->count());
                 break;
-        case Qt::Key_0:
-            ui->tabWidget->setCurrentIndex(9);
+            case Qt::Key_F: // ctrl+f = find, shift=reverse search direction
+                {
+                auto dlg = new FindDialog(this, _lastSearch, _findFlags, _findRegex);
+                if (dlg->exec() == QDialog::Accepted) {
+                    _lastSearch = dlg->text();
+                    _findFlags = dlg->flags();
+                    _findRegex = dlg->regex();
+                    if (!_lastSearch.isEmpty()) findNext(key->modifiers() & Qt::ShiftModifier);
+                }
+                delete dlg;
                 break;
-        case Qt::Key_Tab:
-        case Qt::Key_Backtab:
-            if ((key->key()==Qt::Key_Backtab || (key->modifiers() & Qt::ShiftModifier)) && ui->tabWidget->currentIndex()==0)
-                ui->tabWidget->setCurrentIndex(ui->tabWidget->count()-1);
-            else if (key->key()==Qt::Key_Backtab || (key->modifiers() & Qt::ShiftModifier))
-                ui->tabWidget->setCurrentIndex((ui->tabWidget->currentIndex()-1)%ui->tabWidget->count());
-            else
-                ui->tabWidget->setCurrentIndex((ui->tabWidget->currentIndex()+1)%ui->tabWidget->count());
-            break;
-        default:
-            return QObject::eventFilter(obj, event);
+                }
+            case Qt::Key_F3:
+            case Qt::Key_G: // F3 = ctrl+g = find next, shift=reverse search direction
+                if (!_lastSearch.isEmpty()) findNext(key->modifiers() & Qt::ShiftModifier);
+                break;
+            case Qt::Key_Home: // Home in scripts goes to first line
+                if (ui->tabWidget->currentWidget()==ui->tabScripts) {
+                    ui->txtScripts->moveCursor(QTextCursor::Start);
+                } else return QObject::eventFilter(obj, event);
+                break;
+            case Qt::Key_End: // End in scripts goes to last line
+                if (ui->tabWidget->currentWidget()==ui->tabScripts) {
+                    ui->txtScripts->moveCursor(QTextCursor::End);
+                } else return QObject::eventFilter(obj, event);
+                break;
+            default:
+                return QObject::eventFilter(obj, event);
+            }
+        } else {
+            switch (key->key())
+            {
+            default:
+                return QObject::eventFilter(obj, event);
+            }
         }
         return true;
     }
@@ -173,6 +247,9 @@ bool MainWindow::loadRom()
     ui->lstBlocks->clear();
     ui->tiles->clear();
     ui->lblStats->setText("");
+    ui->lstScripts->clear();
+    ui->hexScripts->clear();
+    ui->txtScripts->clear();
 
     if (!_rom->isOpen()) {
         QMessageBox::warning(this, "Error", "Could not open ROM");
@@ -275,6 +352,9 @@ bool MainWindow::loadRom()
                           .arg(_spriteInfos.size())
                           .arg(_largeBlocksCount)
                           .arg(_spriteBlocks.size()-_largeBlocksCount));
+
+    on_tabWidget_currentChanged(ui->tabWidget->currentIndex()); // update scripts if on scripts tab
+
     return true; // OK
 }
 
@@ -491,4 +571,220 @@ void MainWindow::on_lstSpriteChunks_currentRowChanged(int currentRow)
         int index = (int)chunk.block + ((chunk.flags&1) ? 0 : _largeBlocksCount);
         ui->lstBlocks->setCurrentRow(index);
     }
+}
+
+static int script_select(QTextBrowser* src, QTextBrowser* dst)
+{
+    QTextCursor cursor = src->textCursor();
+
+    // select current line in src
+    QTextBrowser::ExtraSelection selection;
+    QColor color = QColor(0, 0, 64, 20);
+    selection.format.setBackground(color);
+    selection.format.setProperty(QTextFormat::FullWidthSelection, true);
+    selection.cursor = cursor;
+    selection.cursor.clearSelection();
+    QList<QTextBrowser::ExtraSelection> extraSelections;
+    extraSelections.append(selection);
+    src->setExtraSelections(extraSelections);
+
+    // count line number ...
+    cursor.movePosition(QTextCursor::StartOfLine);
+    int lineNo = 0;
+    while(cursor.positionInBlock()>0) {
+        cursor.movePosition(QTextCursor::Up);
+        lineNo++;
+    }
+    QTextBlock block = cursor.block().previous();
+    while(block.isValid()) {
+        lineNo += block.lineCount();
+        block = block.previous();
+    }
+
+    // ... to synchronize with dst
+    cursor = QTextCursor(dst->document()->findBlockByLineNumber(lineNo));
+    selection.cursor = cursor;
+    selection.cursor.clearSelection();
+    extraSelections.clear();
+    extraSelections.append(selection);
+    dst->setExtraSelections(extraSelections);
+
+    // return lineNo to synchronize with list
+    return lineNo;
+}
+
+void MainWindow::on_txtScripts_cursorPositionChanged()
+{
+    if (_scriptLoading) return;
+    int lineNo = script_select(ui->txtScripts, ui->hexScripts);
+    // synchronize with list unless it has signals blocked
+    // (which indicates the list set the cursor)
+    if (ui->lstScripts->signalsBlocked()) return;
+    int row = -1;
+    for (auto& shortcut: _scriptShortcuts) {
+        if (shortcut>lineNo) break;
+        row++;
+    }
+    if (row>=0) {
+        ui->lstScripts->blockSignals(true);
+        ui->lstScripts->setCurrentRow(row);
+        ui->lstScripts->blockSignals(false);
+    }
+}
+
+void MainWindow::on_hexScripts_cursorPositionChanged()
+{
+    if (_scriptLoading) return;
+    int lineNo = script_select(ui->hexScripts, ui->txtScripts);
+    // synchronize with list unless it has signals blocked
+    // (which indicates the list set the cursor)
+    if (ui->lstScripts->signalsBlocked()) return;
+    int row = -1;
+    for (auto& shortcut: _scriptShortcuts) {
+        if (shortcut>lineNo) break;
+        row++;
+    }
+    if (row>=0) {
+        ui->lstScripts->blockSignals(true);
+        ui->lstScripts->setCurrentRow(row);
+        ui->lstScripts->blockSignals(false);
+    }
+}
+
+void MainWindow::on_lstScripts_currentRowChanged(int currentRow)
+{
+    if (currentRow<0) return;
+    ui->lstScripts->blockSignals(true);
+    auto cursor = QTextCursor(ui->txtScripts->document()->findBlockByLineNumber(_scriptShortcuts[currentRow]));
+    ui->txtScripts->moveCursor(QTextCursor::End); // scroll from bottom
+    ui->txtScripts->setTextCursor(cursor); // to have line of interest on top
+    ui->lstScripts->blockSignals(false);
+}
+
+void MainWindow::on_lstScripts_itemClicked(QListWidgetItem *item)
+{
+    // scroll if clicked while already selected
+    if (!item) return;
+    int currentRow = item->listWidget()->row(item);
+    on_lstScripts_currentRowChanged(currentRow);
+}
+
+
+void MainWindow::on_tabWidget_currentChanged(int index)
+{
+    (void)index; // ignore unused warning
+    if (ui->tabWidget->currentWidget() == ui->tabScripts && ui->txtScripts->toPlainText().length()==0)
+    {
+        auto t0 = QDateTime::currentMSecsSinceEpoch();
+        // TODO: since the regex stuff and string cat on 8MB may take some time,
+        //       wrap non-ui part to run it in a different thread when loading ROM, then
+        //       update GUI here once that is done
+        _scriptLoading = true;
+        _scriptShortcuts.clear();
+        ui->lstScripts->clear();
+        ui->hexScripts->clear();
+        ui->txtScripts->clear();
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        QApplication::processEvents();
+        ui->txtScripts->setUpdatesEnabled(false);
+        ui->hexScripts->setUpdatesEnabled(false);
+        ui->lstScripts->setUpdatesEnabled(false);
+
+        QByteArray fn = QFile::encodeName(_file);
+        QString s = QString::fromStdString(ScriptParser(fn).parse());
+        qDebug("generated %dKB of HTML\n", s.length()/1024);
+        auto lines = s.split("\n");
+        QRegularExpression reHexSpan("\\s*<span[^>]*class=\"hex\"[^>]*>([^>]*)</span>");
+        QRegularExpression reHexI("\\s*<i>([^>]*)</i>");
+        ui->txtScripts->setHtml(s.replace(reHexSpan, "").replace(reHexI, ""));
+
+        QRegularExpression reSpan("<span[^>]*>");
+        QRegularExpression reFont("<font[^>]*>");
+        QRegularExpression reMapId("^\\[0x..\\] ");
+        QRegularExpression reMapAt(" at 0x[0-9a-fA-F]+$");
+        QRegularExpression reAbsScript("^\\s+\"[^\"]*\" = ");
+        auto undecorate = [&reSpan,&reFont,&reHexSpan,&reHexI](QString s) -> QString {
+            return s.replace("</span>","")
+                    .replace("</font>","")
+                    .replace("</b>","")
+                    .replace("<b>","")
+                    .replace(reSpan,"")
+                    .replace(reFont,"")
+                    .replace(reHexSpan,"")
+                    .replace(reHexI,"");
+        };
+        auto reduce = [&reMapId,&reMapAt](QString s) -> QString {
+            QString t = s.replace(reMapAt, ""); // makes a copy after in-line replace
+            if (t.replace(reMapId, "") != "Unknown") return t;
+            return s;
+        };
+        auto extract = [](const QString& s) -> QStringRef {
+            auto p1 = s.indexOf((QChar)'\"')+1;
+            auto p2 = s.indexOf((QChar)'\"', p1);
+            return s.midRef(p1, p2-p1);
+        };
+
+        QString hexData;
+        int n=-1;
+        for (const auto& line: lines) {
+            n++;
+            auto tmp = (line.startsWith("</span>") || line.startsWith("</font>")) ?
+                        line.mid(7) : line; // TODO: QStringRef
+            bool isTitle = (tmp.startsWith("<span class=\"h\">") ||
+                            tmp.startsWith("<span class=\"t\">") ||
+                            tmp.startsWith("<font color=\"#770\">"));
+            if (isTitle) {
+                ui->lstScripts->addItem(reduce(undecorate(tmp)));
+                _scriptShortcuts.append(n);
+            } else if (reAbsScript.match(tmp).hasMatch()) {
+                ui->lstScripts->addItem("  "+extract(tmp));
+                _scriptShortcuts.append(n);
+            }
+            auto hexMatch = reHexI.match(tmp);
+            if (! hexMatch.hasMatch()) hexMatch = reHexSpan.match(tmp);
+            if (hexMatch.hasMatch() && hexData.length()) hexData += "\n"+hexMatch.captured(1);
+            else if (hexMatch.hasMatch()) hexData += hexMatch.captured(1);
+            else if (hexData.length()) hexData += "\n ";
+            else hexData += " ";
+        }
+
+        ui->hexScripts->setHtml("<pre>"+hexData+"</pre>");
+
+        ui->txtScripts->verticalScrollBar()->setValue(0);
+        _scriptLoading = false;
+        on_txtScripts_cursorPositionChanged();
+
+        ui->txtScripts->setUpdatesEnabled(true);
+        ui->hexScripts->setUpdatesEnabled(true);
+        ui->lstScripts->setUpdatesEnabled(true);
+
+        QApplication::restoreOverrideCursor();
+        QTimer::singleShot(0, this, [t0]() {
+            auto t1 = QDateTime::currentMSecsSinceEpoch();
+            qDebug("UI was blocked for %ld ms\n", (long)(t1-t0));
+        });
+    }
+}
+
+bool MainWindow::findNext(bool backwards)
+{
+    // for now only scripts are searchable
+    ui->tabWidget->setCurrentWidget(ui->tabScripts);
+
+    auto flags = _findFlags;
+    if (backwards) flags |= QTextDocument::FindBackward;
+    auto document = ui->txtScripts->document();
+    const QTextCursor cur = ui->txtScripts->textCursor();
+    QTextCursor match;
+    if (_findRegex) {
+        QRegularExpression term(_lastSearch);
+        match = document->find(term, cur, flags);
+    } else {
+        auto term = _lastSearch;
+        match = document->find(term, cur, flags);
+    }
+    if (match.isNull()) return false;
+
+    ui->txtScripts->setTextCursor(match);
+    return true;
 }

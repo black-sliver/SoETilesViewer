@@ -2,10 +2,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTextDocument>
+#include <QListWidgetItem>
 #include "rom.h"
 #include "spriteblock.h"
 #include "spriteinfo.h"
-
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -40,8 +41,15 @@ private slots:
 
 
     void on_cbxBackground_activated(int index);
-
     void on_cbxBackground2_activated(int index);
+
+    void on_tabWidget_currentChanged(int index);
+
+    void on_txtScripts_cursorPositionChanged();
+    void on_hexScripts_cursorPositionChanged();
+
+    void on_lstScripts_currentRowChanged(int currentRow);
+    void on_lstScripts_itemClicked(QListWidgetItem *item);
 
 private:
     Ui::MainWindow *ui;
@@ -56,6 +64,13 @@ private:
     int _largeBlocksCount=0;
     QList<SpriteInfo> _spriteInfos;
     QString _baseTitle;
+    QString _lastSearch;
+    bool _scriptLoading = false;
+    QList<int> _scriptShortcuts;
+    QTextDocument::FindFlags _findFlags;
+    bool _findRegex;
+
     bool loadRom();
+    bool findNext(bool backwards);
 };
 #endif // MAINWINDOW_H
