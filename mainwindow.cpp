@@ -147,6 +147,10 @@ MainWindow::MainWindow(QWidget *parent)
         QApplication::processEvents();
         on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
     });
+
+#ifdef WIN32
+    ui->txtScripts->setPlaceholderText(ui->txtScripts->placeholderText() + "\nThe app may be unresponsive for an additional minute!");
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -691,7 +695,13 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         ui->lstScripts->setUpdatesEnabled(false);
 
         QByteArray fn = QFile::encodeName(_file);
-        QString s = QString::fromStdString(ScriptParser(fn).parse());
+        std::string err;
+        QString s = QString::fromStdString(ScriptParser(fn).parse(&err));
+        if (!err.empty()) {
+            QString qsErr = QString::fromStdString(err);
+            if (!qsErr.startsWith("WARN:")) QMessageBox::warning(this, "Parse Error", QString::fromStdString(err));
+            else qWarning("-- ScriptParser --\n%s--\n", qUtf8Printable(qsErr));
+        }
         qDebug("generated %dKB of HTML\n", s.length()/1024);
         auto lines = s.split("\n");
         QRegularExpression reHexSpan("\\s*<span[^>]*class=\"hex\"[^>]*>([^>]*)</span>");
@@ -744,8 +754,8 @@ void MainWindow::on_tabWidget_currentChanged(int index)
             if (! hexMatch.hasMatch()) hexMatch = reHexSpan.match(tmp);
             if (hexMatch.hasMatch() && hexData.length()) hexData += "\n"+hexMatch.captured(1);
             else if (hexMatch.hasMatch()) hexData += hexMatch.captured(1);
-            else if (hexData.length()) hexData += "\n ";
-            else hexData += " ";
+            else if (hexData.length()) hexData += "\n&nbsp;";
+            else hexData += "&nbsp;";
         }
 
         ui->hexScripts->setHtml("<pre>"+hexData+"</pre>");
@@ -754,14 +764,14 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         _scriptLoading = false;
         on_txtScripts_cursorPositionChanged();
 
-        ui->txtScripts->setUpdatesEnabled(true);
-        ui->hexScripts->setUpdatesEnabled(true);
         ui->lstScripts->setUpdatesEnabled(true);
 
-        QApplication::restoreOverrideCursor();
-        QTimer::singleShot(0, this, [t0]() {
+        QTimer::singleShot(0, this, [t0,this]() {
             auto t1 = QDateTime::currentMSecsSinceEpoch();
             qDebug("UI was blocked for %ld ms\n", (long)(t1-t0));
+            ui->txtScripts->setUpdatesEnabled(true);
+            ui->hexScripts->setUpdatesEnabled(true);
+            QApplication::restoreOverrideCursor();
         });
     }
 }
@@ -770,6 +780,7 @@ bool MainWindow::findNext(bool backwards)
 {
     // for now only scripts are searchable
     ui->tabWidget->setCurrentWidget(ui->tabScripts);
+    ui->txtScripts->setFocus(); // make sure selection is visible
 
     auto flags = _findFlags;
     if (backwards) flags |= QTextDocument::FindBackward;

@@ -22,7 +22,8 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     scriptparser.cpp \
-    tileview.cpp
+    tileview.cpp \
+    util.cpp
 
 HEADERS += \
     colormap.h \
@@ -33,7 +34,8 @@ HEADERS += \
     scriptparser.h \
     spriteblock.h \
     spriteinfo.h \
-    tileview.h
+    tileview.h \
+    util.h
 
 FORMS += \
     finddialog.ui \
