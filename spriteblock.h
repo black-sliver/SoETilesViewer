@@ -5,6 +5,7 @@
 #include "rom.h"
 #include <QByteArray>
 #include <string.h>
+#include <assert.h>
 
 
 struct SpriteBlock {
