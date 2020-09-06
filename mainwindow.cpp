@@ -266,6 +266,8 @@ bool MainWindow::loadRom()
     ui->hexScripts->clear();
     ui->txtScripts->clear();
 
+    _spriteBlocks.clear();
+
     if (!_rom->isOpen()) {
         QMessageBox::warning(this, "Error", "Could not open ROM");
         return false;
@@ -567,6 +569,7 @@ void MainWindow::on_lstSprites_currentRowChanged(int currentRow)
     ui->lstSpriteChunks->clear();
     ui->sprite->clear();
     ui->sprite->addColorMap(ColorMap::FromSnes(colorMaps[ui->cbxDefaultColorMap->currentIndex()].snescolors));
+    if (currentRow<0) return;
     for (const auto& chunk : _spriteInfos[currentRow].chunks) {
         ui->lstSpriteChunks->addItem(chunk.toString());
         if (chunk.flags&1) // 16x16 sprite block
