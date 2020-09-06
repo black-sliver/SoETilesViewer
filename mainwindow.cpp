@@ -352,7 +352,7 @@ bool MainWindow::loadRom()
     }
 
     setWindowTitle(_baseTitle + " - " + QFileInfo(_file).fileName());
-    ui->lblStats->setText(QStringLiteral("%1 sprites, %2+%3 sprite blocks")
+    ui->lblStats->setText(QStringLiteral("%1 sprites, %2+%3 sprite tiles")
                           .arg(_spriteInfos.size())
                           .arg(_largeBlocksCount)
                           .arg(_spriteBlocks.size()-_largeBlocksCount));
