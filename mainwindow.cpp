@@ -33,6 +33,9 @@ struct PredefinedBackground {
 
 constexpr auto SFC_FILTER = "SNES ROM (*.sfc *.smc);;All Files (*)";
 constexpr auto PNG_FILTER = "PNG Image (*.png);;All Files (*)";
+constexpr auto LIST_DARK_THEME = "QListWidget::item{color:#eee;background-color:#070707;} QListWidget::item:selected{color:#fff;background-color:#28282d;}";
+static const QColor TEXT_HIGHLIGHT_DEFAULT = QColor(0,0,64,20);
+static const QColor TEXT_HIGHLIGHT_DARK = QColor(40,40,45,255);
 
 constexpr PredefinedColorMap colorMaps[] = {
     { "Boy",        { 0, 0x7fbc, 0x4edf, 0x2dba, 0x1913, 0x1489, 0x7eaa, 0x7923, 0x5465, 0x02bf, 0x059c, 0x08f6, 0x07ea, 0x0287, 0x1885, 0x0000 } },
@@ -106,10 +109,16 @@ MainWindow::MainWindow(QWidget *parent)
         ui->cbxBackground->addItem(bg.name);
         ui->cbxBackground2->addItem(bg.name);
     }
+    for (auto& scriptcolor: {"System","Dark"}) {
+        ui->cbxScriptColor->addItem(scriptcolor);
+    }
 
     _baseTitle = windowTitle();
 
     QSettings settings;
+    ui->cbxScriptColor->setCurrentIndex(settings.value("darkmode", false).toBool()?1:0);
+    if (ui->cbxScriptColor->currentIndex())
+        ui->lstScripts->setStyleSheet(LIST_DARK_THEME);
     _file = settings.value("lastfile", "").toString();
     _lastopen = settings.value("lastopen", "").toString();
     if (_lastopen.isEmpty()) _lastopen = settings.value("lastdir", "").toString();
@@ -162,6 +171,8 @@ MainWindow::~MainWindow()
         settings.setValue("findflags", (unsigned)_findFlags);
     if (_findRegex != settings.value("findregex", false).toBool())
         settings.setValue("findregex", _findRegex);
+    if ((ui->cbxScriptColor->currentIndex()?true:false) != settings.value("darkmode",false).toBool())
+        settings.setValue("darkmode", ui->cbxScriptColor->currentIndex()?true:false);
     delete ui;
 }
 
@@ -577,13 +588,12 @@ void MainWindow::on_lstSpriteChunks_currentRowChanged(int currentRow)
     }
 }
 
-static int script_select(QTextBrowser* src, QTextBrowser* dst)
+static int script_select(QTextBrowser* src, QTextBrowser* dst, QColor color)
 {
     QTextCursor cursor = src->textCursor();
 
     // select current line in src
     QTextBrowser::ExtraSelection selection;
-    QColor color = QColor(0, 0, 64, 20);
     selection.format.setBackground(color);
     selection.format.setProperty(QTextFormat::FullWidthSelection, true);
     selection.cursor = cursor;
@@ -620,7 +630,9 @@ static int script_select(QTextBrowser* src, QTextBrowser* dst)
 void MainWindow::on_txtScripts_cursorPositionChanged()
 {
     if (_scriptLoading) return;
-    int lineNo = script_select(ui->txtScripts, ui->hexScripts);
+    int lineNo = script_select(ui->txtScripts, ui->hexScripts,
+                               ui->cbxScriptColor->currentIndex() ?
+                                   TEXT_HIGHLIGHT_DARK : TEXT_HIGHLIGHT_DEFAULT);
     // synchronize with list unless it has signals blocked
     // (which indicates the list set the cursor)
     if (ui->lstScripts->signalsBlocked()) return;
@@ -639,7 +651,9 @@ void MainWindow::on_txtScripts_cursorPositionChanged()
 void MainWindow::on_hexScripts_cursorPositionChanged()
 {
     if (_scriptLoading) return;
-    int lineNo = script_select(ui->hexScripts, ui->txtScripts);
+    int lineNo = script_select(ui->hexScripts, ui->txtScripts,
+                               ui->cbxScriptColor->currentIndex() ?
+                                   TEXT_HIGHLIGHT_DARK : TEXT_HIGHLIGHT_DEFAULT);
     // synchronize with list unless it has signals blocked
     // (which indicates the list set the cursor)
     if (ui->lstScripts->signalsBlocked()) return;
@@ -696,7 +710,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 
         QByteArray fn = QFile::encodeName(_file);
         std::string err;
-        QString s = QString::fromStdString(ScriptParser(fn).parse(&err));
+        QString s = QString::fromStdString(ScriptParser(fn).parse(&err,ui->cbxScriptColor->currentIndex()));
         if (!err.empty()) {
             QString qsErr = QString::fromStdString(err);
             if (!qsErr.startsWith("WARN:")) QMessageBox::warning(this, "Parse Error", QString::fromStdString(err));
@@ -758,7 +772,9 @@ void MainWindow::on_tabWidget_currentChanged(int index)
             else hexData += "&nbsp;";
         }
 
-        ui->hexScripts->setHtml("<pre>"+hexData+"</pre>");
+        ui->hexScripts->setHtml((ui->cbxScriptColor->currentIndex()?
+                                     "<head><style>*{background:#070707;color:#eee;}</style></heah><body><pre>":
+                                     "<body><pre>")+hexData+"</pre></body>");
 
         ui->txtScripts->verticalScrollBar()->setValue(0);
         _scriptLoading = false;
@@ -798,4 +814,13 @@ bool MainWindow::findNext(bool backwards)
 
     ui->txtScripts->setTextCursor(match);
     return true;
+}
+
+void MainWindow::on_cbxScriptColor_activated(int index)
+{
+    // set list style
+    ui->lstScripts->setStyleSheet(index ? LIST_DARK_THEME : "");
+    // generate HTML with new style
+    ui->txtScripts->clear();
+    on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
 }

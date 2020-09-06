@@ -21,11 +21,8 @@ static FILE* errpipe = nullptr;
 } while (false);
 #define main _scriptparser
 #define printf(args...) fprintf(outpipe, args)
-#ifdef SCRIPT_PARSER_HTML5
-#define HTML5
-#else
-#define HTML4
-#endif
+//#define HTML4
+#define HTML5 // required for dark mode
 #define NO_BOLD // does not play nice with synchronized textboxes
 #define PRINT_HEX
 #include "SoEScriptDumper/list-rooms.cpp"
@@ -38,21 +35,35 @@ ScriptParser::ScriptParser(const char* rom)
     _romfile = rom;
 }
 
-std::string ScriptParser::parse(std::string* err) const
+std::string ScriptParser::parse(std::string* err, bool dark) const
 {
     assert(!outpipe);
     assert(!errpipe);
 
     // NOTE: css below seems to be the fastest
-    std::string res = "<html>"
+    std::string res = (!dark) ? "<html>"
             "<head><style>"
             "body { white-space: pre; } "
         #ifndef HTML4 // we use <font color> for HTML4 instead
-            ".r { color:#c22; } "
-            ".g { color:#2c2; } "
-            ".u { color:#c2c; } "
-            ".h,.t { color:#cc2; } "
+            ".r { color:#f00; } "
+            ".g { color:#0f0; } "
+            ".u { color:#707; } "
+            ".h,.t { color:#770; } "
+        #ifndef NO_BOLD
             ".t { font-weight:bold; } "
+        #endif
+        #endif
+            "</style></head><body>" : "<html>"
+            "<head><style>"
+            "body { white-space: pre; background:#070707; color:#eee; } "
+        #ifndef HTML4 // we use <font color> for HTML4 instead
+            ".r { color:#f44; } "
+            ".g { color:#4f4; } "
+            ".u { color:#d4f; } "
+            ".h,.t { color:#ee4; } "
+        #ifndef NO_BOLD
+            ".t { font-weight:bold; } "
+        #endif
         #endif
             "</style></head><body>";
 

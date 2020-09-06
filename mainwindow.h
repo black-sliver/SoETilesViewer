@@ -51,6 +51,8 @@ private slots:
     void on_lstScripts_currentRowChanged(int currentRow);
     void on_lstScripts_itemClicked(QListWidgetItem *item);
 
+    void on_cbxScriptColor_activated(int index);
+
 private:
     Ui::MainWindow *ui;
     QString _file;

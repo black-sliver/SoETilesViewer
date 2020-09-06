@@ -8,7 +8,7 @@ class ScriptParser
 public:
     ScriptParser(const char* filename);
 
-    std::string parse(std::string* err=NULL) const;
+    std::string parse(std::string* err=NULL, bool dark=false) const;
 private:
     std::string _romfile;
 };
