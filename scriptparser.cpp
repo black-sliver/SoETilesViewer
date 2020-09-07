@@ -5,6 +5,13 @@
 #include <assert.h>
 #include <errno.h>
 
+
+#ifdef __has_include
+#if !__has_include("SoEScriptDumper/list-rooms.cpp")
+#error "SoEScriptDumper/list-rooms.cpp missing! Make sure git submodules are initialized correctly!"
+#endif
+#endif
+
 // yes, this is ugly.
 static FILE* outpipe = nullptr;
 static FILE* errpipe = nullptr;
