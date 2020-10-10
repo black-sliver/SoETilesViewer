@@ -53,10 +53,14 @@ private slots:
 
     void on_cbxScriptColor_activated(int index);
 
+    void on_saveHTMLButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString _file;
     QString _lastopen;
+    QString _lastsave_html;
+    QString _generatedScriptsHTML;
     QString _exportdir;
     QStringList _workingCopies;
     QStringList _warnedCopies;
@@ -73,6 +77,7 @@ private:
     bool _findRegex;
 
     bool loadRom();
+    bool saveHTML(QString f);
     bool findNext(bool backwards);
 };
 #endif // MAINWINDOW_H
