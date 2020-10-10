@@ -282,7 +282,7 @@ bool MainWindow::loadRom()
             QString f = QFileInfo(srcFi.dir(), srcFi.baseName()).filePath() + "-modified.sfc";
             f = QFileDialog::getSaveFileName(this, "Save copy", f, SFC_FILTER);
             if (f.isEmpty()) return false;
-            if (!appendSuffixAskToOverwrite(this, f, ".sfc", "Savec copy")) return false;
+            if (!appendSuffixAskToOverwrite(this, f, ".sfc", "Save copy")) return false;
             if (f == _file) { QMessageBox::warning(this, "Error", "Filename has to be different..."); return false; }
             if (!_rom->saveAs(f)) {
                 QMessageBox::warning(this, "Error", "Could not save copy!");
