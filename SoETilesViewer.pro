@@ -35,7 +35,8 @@ HEADERS += \
     spriteblock.h \
     spriteinfo.h \
     tileview.h \
-    util.h
+    util.h \
+    SoEScriptDumper/list-rooms.cpp
 
 FORMS += \
     finddialog.ui \
