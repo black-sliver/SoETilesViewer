@@ -745,11 +745,19 @@ void MainWindow::on_tabWidget_currentChanged(int index)
             if (t.replace(reMapId, "") != "Unknown") return t;
             return s;
         };
+#if QT_VERSION >= 0x050900 // actually I don't know what the first version is that auto-casts QStringRef when doing +
         auto extract = [](const QString& s) -> QStringRef {
             auto p1 = s.indexOf((QChar)'\"')+1;
             auto p2 = s.indexOf((QChar)'\"', p1);
             return s.midRef(p1, p2-p1);
         };
+#else
+        auto extract = [](const QString& s) -> QString {
+            auto p1 = s.indexOf((QChar)'\"')+1;
+            auto p2 = s.indexOf((QChar)'\"', p1);
+            return s.mid(p1, p2-p1);
+        };
+#endif
 
         QString hexData;
         int n=-1;
