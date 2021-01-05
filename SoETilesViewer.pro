@@ -26,6 +26,7 @@ SOURCES += \
     util.cpp
 
 HEADERS += \
+    characterdata.h \
     colormap.h \
     finddialog.h \
     frameview.h \

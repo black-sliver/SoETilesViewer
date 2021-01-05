@@ -91,6 +91,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lstBlocks->setFont(fixedFont);
     ui->lstSprites->setFont(fixedFont);
     ui->lstSpriteChunks->setFont(fixedFont);
+    ui->lstCharacters->setFont(fixedFont);
+    ui->btnCharacterNameRelocate->setIcon(style()->standardIcon(QStyle::SP_ArrowForward));
+    ui->btnCharacterNameRelocate->setToolTip("Relocate...");
+    ui->btnCharacterNameRelocate->setText("");
     ui->lstScripts->setFont(fixedFont);
     ui->txtScripts->setFont(fixedFont);
     ui->hexScripts->setFont(fixedFont);
@@ -261,15 +265,19 @@ bool MainWindow::loadRom()
     if (_rom) delete _rom;
     _rom = new Rom(_file);
 
+    int oldCharacterIndex = ui->lstCharacters->currentRow();
+
     ui->lstSprites->clear();
     ui->lstBlocks->clear();
     ui->tiles->clear();
+    ui->lstCharacters->clear();
     ui->lblStats->setText("");
     ui->lstScripts->clear();
     ui->hexScripts->clear();
     ui->txtScripts->clear();
 
     _spriteBlocks.clear();
+    _characterData.clear();
 
     if (!_rom->isOpen()) {
         QMessageBox::warning(this, "Error", "Could not open ROM");
@@ -366,6 +374,15 @@ bool MainWindow::loadRom()
         if (invalidBlock) qDebug("encountered invalid block\n");
         if (tooLongChunk) qDebug("chunk too long: %u\n", tooLongChunk);
     }
+
+    for (int i=0; i<142; i++) { // TODO: any indication on how many there are in rom?
+        CharacterData character(i, _rom);
+        _characterData.append(character);
+        ui->lstCharacters->addItem(character.toString());
+    }
+    if (oldCharacterIndex<0 || oldCharacterIndex>=_characterData.length())
+        oldCharacterIndex = 0; // select first
+    ui->lstCharacters->setCurrentRow(oldCharacterIndex);
 
     setWindowTitle(_baseTitle + " - " + QFileInfo(_file).fileName());
     ui->lblStats->setText(QStringLiteral("%1 sprites, %2+%3 sprite tiles")
@@ -837,4 +854,71 @@ void MainWindow::on_cbxScriptColor_activated(int index)
     // generate HTML with new style
     ui->txtScripts->clear();
     on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
+}
+
+static void setTextAndTooltip(QLineEdit* w, QString text, QString tooltip)
+{
+    w->setText(text);
+    w->setToolTip(tooltip);
+}
+static void setTextAndAddrTooltip(QLineEdit* w, QString text, unsigned addr)
+{
+    setTextAndTooltip(w, text, QStringLiteral("$%1").arg(addr,0,16));
+}
+static void setHexTextAndAddrTooltip(QLineEdit* w, unsigned value, unsigned addr)
+{
+    setTextAndAddrTooltip(w, QStringLiteral("0x%1").arg(value,0,16), addr);
+}
+static void setDecTextAndAddrTooltip(QLineEdit* w, unsigned value, unsigned addr)
+{
+    setTextAndAddrTooltip(w, QString::number(value), addr);
+}
+
+void MainWindow::on_lstCharacters_currentRowChanged(int currentRow)
+{
+    if (currentRow<0 || currentRow>_characterData.length()) return;
+    auto& c = _characterData[currentRow];
+    setDecTextAndAddrTooltip(ui->txtCharacterId, c.i, c.getAddr());
+    ui->txtCharacterName->setMaxLength(c.namelength);
+    ui->txtCharacterName->setPlaceholderText(c.namehint);
+    setHexTextAndAddrTooltip(ui->txtCharacterUnknown03,  c.unknown03, c.getUnknown03Addr());
+    setHexTextAndAddrTooltip(ui->txtCharacterUnknown05,  c.unknown05, c.getUnknown05Addr());
+    setHexTextAndAddrTooltip(ui->txtCharacterFlags,      c.flags, c.getFlagsAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterPalette,    c.palette, c.getPaletteAddr());
+    setTextAndTooltip(ui->txtCharacterName,              c.name, QStringLiteral("$%1: $%2").arg(c.getNamePtrAddr(),0,16).arg(c.nameptr,0,16));
+    setHexTextAndAddrTooltip(ui->txtCharacterUnknown0b,  c.unknown0b, c.getUnknown0bAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterUnknown0d,  c.unknown0d, c.getUnknown0dAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterHP,         c.hp, c.getHPAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterUnknown11,  c.unknown11, c.getUnknown11Addr());
+    setDecTextAndAddrTooltip(ui->txtCharacterAggroRange, c.aggro_range, c.getAggroRangeAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterAggroChance,c.aggro_chance, c.getAggroChanceAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterUnknown17,  c.unknown17, c.getUnknown17Addr());
+    setDecTextAndAddrTooltip(ui->txtCharacterAttack,     c.attack, c.getAttackAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterDefense,    c.defense, c.getDefenseAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterMDefense,   c.magic_defense, c.getMagicDefenseAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterEvade,      c.evade, c.getEvadeAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterHitRate,    c.hit_rate, c.getHitRateAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterExp,        c.exp, c.getExpAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterMoney,      c.money, c.getMoneyAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterPrizeChance,c.prize_chance, c.getPrizeChanceAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterUnknown2a,  c.unknown2a, c.getUnknown2aAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterChargeLimit,c.charge_limit, c.getChargeLimitAddr());
+    setDecTextAndAddrTooltip(ui->txtCharacterChargeRate, c.charge_rate, c.getChargeRateAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAttackProc, c.attack_proc, c.getAttackProcAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimStand,  c.anim_stand, c.getAnimStandAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimWalk,   c.anim_walk, c.getAnimWalkAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimRun,    c.anim_run, c.getAnimRunAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimAtk0,   c.anim_atk0, c.getAnimAtk0Addr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimAtk1,   c.anim_atk1, c.getAnimAtk1Addr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimAtk2,   c.anim_atk2, c.getAnimAtk2Addr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimAtk3,   c.anim_atk3, c.getAnimAtk3Addr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimDamage, c.anim_damage, c.getAnimDamageAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimDeath,  c.anim_death, c.getAnimDeathAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimSpoils, c.anim_spoils, c.getAnimSpoilsAddr());
+    setHexTextAndAddrTooltip(ui->txtCharacterAnimBlock,  c.anim_block, c.getAnimBlockAddr());
+}
+
+void MainWindow::on_btnCharacterNameRelocate_clicked()
+{
+    QMessageBox::information(this, "Not implemented", "Relocation not implemented!");
 }

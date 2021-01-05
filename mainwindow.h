@@ -7,6 +7,7 @@
 #include "rom.h"
 #include "spriteblock.h"
 #include "spriteinfo.h"
+#include "characterdata.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -53,8 +54,13 @@ private slots:
 
     void on_cbxScriptColor_activated(int index);
 
+    void on_lstCharacters_currentRowChanged(int currentRow);
+
+    void on_btnCharacterNameRelocate_clicked();
+
 private:
     Ui::MainWindow *ui;
+    QString _baseTitle;
     QString _file;
     QString _lastopen;
     QString _exportdir;
@@ -65,7 +71,8 @@ private:
     QList<SpriteBlock> _spriteBlocks;
     int _largeBlocksCount=0;
     QList<SpriteInfo> _spriteInfos;
-    QString _baseTitle;
+    QList<CharacterData> _characterData;
+
     QString _lastSearch;
     bool _scriptLoading = false;
     QList<int> _scriptShortcuts;
