@@ -123,7 +123,7 @@ void FrameView::paintEvent(QPaintEvent* ev)
         memset(pixels, 0, w*h*sizeof(QRgb));
         const ColorMap& map = _colorMaps[_colorMapMap[0]];
         for (uint8_t priority = 0; priority<4; priority++) {
-            for (int i=0; i<_spriteBlocks.size(); i++) {
+            for (int i=_spriteBlocks.size()-1; i>=0; i--) {
                 const SpriteChunk& chunk = _spriteChunks[i];
                 if (((chunk.flags&0x30)>>4) != priority) continue;
                 int x = 2*((int)chunk.x - minx);
