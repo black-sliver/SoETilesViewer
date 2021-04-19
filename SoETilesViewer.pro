@@ -37,6 +37,7 @@ HEADERS += \
     spriteinfo.h \
     tileview.h \
     util.h \
+    SoEScriptDumper/data.h \
     SoEScriptDumper/list-rooms.cpp
 
 FORMS += \
