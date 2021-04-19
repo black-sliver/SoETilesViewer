@@ -143,23 +143,23 @@ MainWindow::MainWindow(QWidget *parent)
 
     // synchronize scripts zoom and scroll position between text and hex
     QScrollBar* sbar = ui->txtScripts->verticalScrollBar();
-    connect(sbar, &QScrollBar::valueChanged, [this]() {
+    connect(sbar, &QScrollBar::valueChanged, this, [this]() {
         ui->hexScripts->verticalScrollBar()->setValue(ui->txtScripts->verticalScrollBar()->value());
     } );
-    connect(sbar, &QScrollBar::rangeChanged, [this]() {
+    connect(sbar, &QScrollBar::rangeChanged, this, [this]() {
         ui->hexScripts->setFont(ui->txtScripts->font());
         ui->hexScripts->verticalScrollBar()->setValue(ui->txtScripts->verticalScrollBar()->value());
     } );
     sbar = ui->hexScripts->verticalScrollBar();
-    connect(sbar, &QScrollBar::valueChanged, [this]() {
+    connect(sbar, &QScrollBar::valueChanged, this, [this]() {
         ui->txtScripts->verticalScrollBar()->setValue(ui->hexScripts->verticalScrollBar()->value());
     } );
-    connect(sbar, &QScrollBar::rangeChanged, [this]() {
+    connect(sbar, &QScrollBar::rangeChanged, this, [this]() {
         ui->txtScripts->setFont(ui->hexScripts->font());
         ui->txtScripts->verticalScrollBar()->setValue(ui->hexScripts->verticalScrollBar()->value());
     } );
 
-    QTimer::singleShot(100, [this]() {
+    QTimer::singleShot(100, this, [this]() {
         QApplication::processEvents();
         on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
     });
