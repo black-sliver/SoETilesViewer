@@ -16,25 +16,25 @@ void FrameView::clear()
     _spriteChunks.clear();
     TileView::clear();
 }
-void FrameView::add(const SpriteBlock& block)
+void FrameView::add(const AbstractTile& block)
 {
     add({},block);
 }
-void FrameView::add(const SpriteChunk& chunk, const SpriteBlock& block)
+void FrameView::add(const SpriteChunk& chunk, const AbstractTile& block)
 {
     _spriteChunks.append(chunk);
-    _spriteBlocks.append(block);
+    _tiles.append(block);
     _layoutChanged = true;
 }
-void FrameView::set(int index, const SpriteBlock& block)
+void FrameView::set(int index, const AbstractTile& block)
 {
-    _spriteBlocks[index] = block;
+    _tiles[index] = block;
     _layoutChanged = true;
 }
-void FrameView::set(int index, const SpriteChunk& chunk, const SpriteBlock& block)
+void FrameView::set(int index, const SpriteChunk& chunk, const AbstractTile& block)
 {
     _spriteChunks[index] = chunk;
-    _spriteBlocks[index] = block;
+    _tiles[index] = block;
     _layoutChanged = true;
 }
 
@@ -84,7 +84,7 @@ int FrameView::itemIndex(int x, int y) const
 
 void FrameView::paintEvent(QPaintEvent* ev)
 {
-    if (_colorMaps.empty() || _spriteBlocks.empty()) {
+    if (_colorMaps.empty() || _tiles.empty()) {
         QPainter painter(this);
         painter.eraseRect(ev->rect());
         return;
@@ -123,13 +123,13 @@ void FrameView::paintEvent(QPaintEvent* ev)
         memset(pixels, 0, w*h*sizeof(QRgb));
         const ColorMap& map = _colorMaps[_colorMapMap[0]];
         for (uint8_t priority = 0; priority<4; priority++) {
-            for (int i=_spriteBlocks.size()-1; i>=0; i--) {
+            for (int i=_tiles.size()-1; i>=0; i--) {
                 const SpriteChunk& chunk = _spriteChunks[i];
                 if (((chunk.flags&0x30)>>4) != priority) continue;
                 int x = 2*((int)chunk.x - minx);
                 int y = 2*((int)chunk.y - miny);
 
-                const SpriteBlock& block = _spriteBlocks[i];
+                const AbstractTile& block = _tiles[i];
                 QByteArray src = block.getPixels();
                 //if (chunk.flags&1) {
                     for (int ys=0; ys<block.size; ys++) {

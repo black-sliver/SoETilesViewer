@@ -121,7 +121,7 @@ public:
         }
         return res;
     }
-    bool writeBlock(unsigned addr, void* src, size_t len) {
+    bool writeBlock(unsigned addr, const void* src, size_t len) {
         addr = mapaddr(addr) + _romoff;
         if (_ok && !_f.isWritable()) { // reopen RW
             _f.close();

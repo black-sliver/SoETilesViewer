@@ -26,6 +26,7 @@ SOURCES += \
     util.cpp
 
 HEADERS += \
+    abstracttile.h \
     characterdata.h \
     colormap.h \
     finddialog.h \
@@ -35,6 +36,7 @@ HEADERS += \
     scriptparser.h \
     spriteblock.h \
     spriteinfo.h \
+    tile.h \
     tileview.h \
     util.h \
     SoEScriptDumper/data.h \

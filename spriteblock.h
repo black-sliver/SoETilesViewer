@@ -6,29 +6,14 @@
 #include <QByteArray>
 #include <string.h>
 #include <assert.h>
+#include "abstracttile.h"
 
 
-struct SpriteBlock {
-    int i;
-    int size;
+struct SpriteBlock : public AbstractTile
+{
+    virtual ~SpriteBlock() {}
 
-    unsigned ptraddr;
-    unsigned dataaddr;
-    bool compressed;
-    uint8_t data[128+128/8]; // this is the maximum amount a block can use in theory
-    unsigned romsize;
-    QByteArray pixels;
-
-    QString toString() // TODO: remove qt dependency
-    {
-        return QStringLiteral("#%1 -> $%2 -> $%3 %4B ").arg(i, 4, 10).arg(ptraddr, 0, 16).arg(dataaddr, 0, 16).arg(romsize, 3, 10) + (compressed ? "compressed" : "uncompressed");
-    }
-
-    const QByteArray& getPixels() const
-    {
-        return pixels;
-    }
-    bool setPixels(const QByteArray& newpixels)
+    virtual bool setPixels(const QByteArray& newpixels)
     {
         assert(size==8 || size==16);
         size_t subwidth = size/8;
@@ -165,7 +150,7 @@ public:
         pixels = loadPixels(data, compressed, &next, size);
         romsize = next-data;
     }
-    bool save(Rom* rom) {
+    virtual bool save(Rom* rom) const {
         return rom->writeBlock(dataaddr, data, romsize);
     }
 };

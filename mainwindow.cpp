@@ -19,6 +19,7 @@
 #include "colormap.h"
 #include "finddialog.h"
 #include "scriptparser.h"
+#include "tile.h"
 
 
 struct PredefinedColorMap {
@@ -37,7 +38,7 @@ constexpr auto LIST_DARK_THEME = "QListWidget::item{color:#eee;background-color:
 static const QColor TEXT_HIGHLIGHT_DEFAULT = QColor(0,0,64,20);
 static const QColor TEXT_HIGHLIGHT_DARK = QColor(40,40,45,255);
 
-constexpr PredefinedColorMap colorMaps[] = {
+constexpr PredefinedColorMap spriteColorMaps[] = {
     { "Boy",          { 0, 0x7fbc, 0x4edf, 0x2dba, 0x1913, 0x1489, 0x7eaa, 0x7923, 0x5465, 0x02bf, 0x059c, 0x08f6, 0x07ea, 0x0287, 0x1885, 0x0000 } },
     { "Act0 Dog",     { 0, 0x7fde, 0x52d8, 0x4253, 0x35f0, 0x298d, 0x62f7, 0x4e73, 0x4210, 0x35ac, 0x4a10, 0x39ac, 0x2d29, 0x1cc6, 0x14a5, 0x0000 } },
     { "Act1 Dog",     { 0, 0x7fbc, 0x7eaa, 0x7923, 0x4eb6, 0x1d4d, 0x3e11, 0x212a, 0x0c86, 0x0c63, 0x4534, 0x2cf4, 0x24cd, 0x10aa, 0x1063, 0x0000 } },
@@ -54,6 +55,23 @@ constexpr PredefinedColorMap colorMaps[] = {
     { "Spell Icons 2",{ 0, 0x7fff, 0x03bf, 0x02bf, 0x01bf, 0x001d, 0x0010, 0x5b36, 0x4270, 0x2dcb, 0x1926, 0x0882, 0x1954, 0x0cce, 0x0448, 0x0000 } },
     { "Hard Ball",    { 0, 0x4ed3, 0x4270, 0x2dcb, 0x1926, 0x0882, 0x4ed3, 0x4ed3, 0x4270, 0x2dcb, 0x1926, 0x0882, 0x4ed3, 0x4270, 0x1505, 0x0441 } },
     { "Turd Ball",    { 0, 0x4eb6, 0x4253, 0x2dae, 0x1909, 0x0464, 0x4eb6, 0x4eb6, 0x4253, 0x2dae, 0x1909, 0x0464, 0x4eb6, 0x4253, 0x14e8, 0x0422 } },
+};
+constexpr PredefinedColorMap mapColorMaps[] = {
+    { "Podunk 1",     { 0, 0x1464, 0x1485, 0x18a7, 0x24e8, 0x312a, 0x3d6c, 0x2d6d, 0x31af, 0x3a12, 0x3e55, 0x4297, 0x4b3b, 0x57ff, 0x000a, 0x0005 } }, // Buildings
+    { "1965 Tiles 1", { 0, 0x0c82, 0x10a3, 0x14e5, 0x1907, 0x1d48, 0x258a, 0x29ac, 0x2ded, 0x320f, 0x3a51, 0x3e92, 0x42b4, 0x5bdd, 0x0000, 0x0000 } }, // Buildings
+    { "Omnitopia 1",  { 0, 0x6358, 0x5ef5, 0x4ed4, 0x4251, 0x39ed, 0x31ab, 0x298b, 0x2949, 0x2108, 0x2106, 0x18e6, 0x14a5, 0x0c83, 0x0442, 0x0000 } }, // Grill
+    { "Omnit. Tree",  { 0, 0x0843, 0x0c65, 0x1087, 0x14a9, 0x01ed, 0x0967, 0x04c3, 0x0040, 0x14a5, 0x18c7, 0x1ce8, 0x1d09, 0x254a, 0x2d8c, 0x31ce } },
+    { "Jungle 1",     { 0, 0x19ef, 0x15ac, 0x116a, 0x1127, 0x0ce5, 0x08a3, 0x0481, 0x0040, 0x08a8, 0x0485, 0x0064, 0x0022, 0x10a6, 0x0864, 0x0443 } }, // Most bushes with no color accent
+    { "Hut Int. 1",   { 0, 0x0c43, 0x10a5, 0x1507, 0x1d6a, 0x0020, 0x0c61, 0x18c4, 0x3168, 0x1024, 0x1066, 0x14c8, 0x190a, 0x214c, 0x25ae, 0x0461 } },
+    { "Hut Ext. 1",   { 0, 0x0843, 0x0c66, 0x14c6, 0x1908, 0x0c63, 0x14e8, 0x1d8a, 0x262d, 0x0866, 0x112b, 0x1a11, 0x22d6, 0x4926, 0x3189, 0x0423 } },
+    { "Thraxx Body",  { 0, 0x0090, 0x006e, 0x044b, 0x0829, 0x0c27, 0x0405, 0x0803, 0x0801, 0x0d5c, 0x04f6, 0x639d, 0x367d, 0x03e0, 0x03e0, 0x0000 } },
+    { "Thraxx Eyes",  { 0, 0x7bff, 0x73bd, 0x677b, 0x5b19, 0x4ed7, 0x4295, 0x3a33, 0x2df1, 0x35ae, 0x2d6c, 0x252a, 0x20c8, 0x1886, 0x1044, 0x0402 } },
+    { "Title Text",   { 0, 0x0400, 0x0442, 0x0464, 0x04a7, 0x04c9, 0x050b, 0x052d, 0x056f, 0x0591, 0x05d4, 0x05f6, 0x0638, 0x065a, 0x0a9c, 0x0abe } },
+    { "Title Sky",    { 0, 0x4587, 0x4166, 0x3d46, 0x3925, 0x3125, 0x2d04, 0x28e4, 0x24c3, 0x20a3, 0x1c82, 0x1482, 0x1061, 0x0c41, 0x0820, 0x0400 } },
+    { "Title Machine",{ 0, 0x0885, 0x0463, 0x0442, 0x0021, 0x0000, 0x0000, 0x0443, 0x0022, 0x0001, 0x0000, 0x18ee, 0x10aa, 0x0c67, 0x0423, 0x0000 } },
+    { "Title Pipes",  { 0, 0x0863, 0x0442, 0x0442, 0x0421, 0x0421, 0x0021, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 } },
+    { "Title Grill",  { 0, 0x0044, 0x0023, 0x0023, 0x0022, 0x0022, 0x0001, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0067 } },
+
 };
 
 constexpr PredefinedBackground backgrounds[] = {
@@ -92,6 +110,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lstSprites->setFont(fixedFont);
     ui->lstSpriteChunks->setFont(fixedFont);
     ui->lstCharacters->setFont(fixedFont);
+    ui->lstMapTiles->setFont(fixedFont);
     ui->btnCharacterNameRelocate->setIcon(style()->standardIcon(QStyle::SP_ArrowForward));
     ui->btnCharacterNameRelocate->setToolTip("Relocate...");
     ui->btnCharacterNameRelocate->setText("");
@@ -107,14 +126,38 @@ MainWindow::MainWindow(QWidget *parent)
     installEventFilter(this);
     ui->txtScripts->installEventFilter(this);
     ui->hexScripts->installEventFilter(this);
+    for (const auto& cbx : { ui->cbxBackground,
+                             ui->cbxBackground2,
+                             ui->cbxBackground3,
+                             ui->cbxDefaultColorMap,
+                             ui->cbxDefaultColorMap2,
+                             ui->cbxMapTilesColorMap })
+        cbx->installEventFilter(this);
 
-    for (auto& map: colorMaps) {
+    // primary color maps (sprite for sprites, map for map tiles)
+    for (auto& map: spriteColorMaps) {
         ui->cbxDefaultColorMap->addItem(map.name);
         ui->cbxDefaultColorMap2->addItem(map.name);
     }
+    for (auto& map: mapColorMaps) {
+        ui->cbxMapTilesColorMap->addItem(map.name);
+    }
+#if 0
+    // secondary color maps (map for sprites, sprite for map tiles)
+    for (auto& map: spriteColorMaps) {
+        ui->cbxMapTilesColorMap->addItem(map.name);
+    }
+    for (auto& map: mapColorMaps) {
+        ui->cbxDefaultColorMap->addItem(map.name);
+        ui->cbxDefaultColorMap2->addItem(map.name);
+    }
+#endif
+
+    // background color
     for (auto& bg: backgrounds) {
         ui->cbxBackground->addItem(bg.name);
         ui->cbxBackground2->addItem(bg.name);
+        ui->cbxBackground3->addItem(bg.name);
     }
     for (auto& scriptcolor: {"System","Dark"}) {
         ui->cbxScriptColor->addItem(scriptcolor);
@@ -269,7 +312,7 @@ bool MainWindow::loadRom()
 
     ui->lstSprites->clear();
     ui->lstBlocks->clear();
-    ui->tiles->clear();
+    ui->tilesSprites->clear();
     ui->lstCharacters->clear();
     ui->lblStats->setText("");
     ui->lstScripts->clear();
@@ -312,14 +355,14 @@ bool MainWindow::loadRom()
         }
     }
 
-    ui->tiles->addColorMap(ColorMap::FromSnes(colorMaps[ui->cbxDefaultColorMap->currentIndex()].snescolors));
+    ui->tilesSprites->addColorMap(ColorMap::FromSnes(spriteColorMaps[ui->cbxDefaultColorMap->currentIndex()].snescolors));
     // 16x16 blocks
     for (int i=0; i<4854; i++) { // TODO: how many are there actually?
         SpriteBlock block(i, _rom);
         if (_rom->mapaddr(block.dataaddr) >= 0x300000-8 /*3MB*/) continue;
         _spriteBlocks.append(block);
         ui->lstBlocks->addItem(block.toString());
-        ui->tiles->add(block);
+        ui->tilesSprites->add(block);
     }
     _largeBlocksCount = _spriteBlocks.size();
     // 8x8 blocks
@@ -328,10 +371,20 @@ bool MainWindow::loadRom()
         if (_rom->mapaddr(block.dataaddr) >= 0x300000-2 /*3MB*/) continue;
         _spriteBlocks.append(block);
         ui->lstBlocks->addItem(block.toString());
-        ui->tiles->add(block);
+        ui->tilesSprites->add(block);
     }
     //ui->lstBlocks->adjustSize();
-    ui->tiles->repaint();
+    ui->tilesSprites->repaint();
+
+    ui->tilesMapTiles->addColorMap(ColorMap::FromSnes(mapColorMaps[ui->cbxMapTilesColorMap->currentIndex()].snescolors));
+    for (int i=0; i<6687; i++) {
+        Tile tile(i, _rom);
+        _mapTiles.append(tile);
+        ui->lstMapTiles->addItem(tile.toString());
+        ui->tilesMapTiles->add(tile);
+    }
+    ui->tilesMapTiles->repaint();
+
 
     {
         _spriteInfos.clear();
@@ -385,10 +438,11 @@ bool MainWindow::loadRom()
     ui->lstCharacters->setCurrentRow(oldCharacterIndex);
 
     setWindowTitle(_baseTitle + " - " + QFileInfo(_file).fileName());
-    ui->lblStats->setText(QStringLiteral("%1 sprites, %2+%3 sprite tiles")
+    ui->lblStats->setText(QStringLiteral("%1 sprites, %2+%3 sprite tiles, %4 map tiles")
                           .arg(_spriteInfos.size())
                           .arg(_largeBlocksCount)
-                          .arg(_spriteBlocks.size()-_largeBlocksCount));
+                          .arg(_spriteBlocks.size()-_largeBlocksCount)
+                          .arg(_mapTiles.size()));
 
     on_tabWidget_currentChanged(ui->tabWidget->currentIndex()); // update scripts if on scripts tab
 
@@ -408,7 +462,7 @@ void MainWindow::on_btnLoad_clicked()
 }
 
 
-void MainWindow::on_tiles_selectionChanged(int index)
+void MainWindow::on_tilesSprites_selectionChanged(int index)
 {
     ui->lstBlocks->setCurrentRow(index);
 }
@@ -416,6 +470,11 @@ void MainWindow::on_tiles_selectionChanged(int index)
 void MainWindow::on_sprite_selectionChanged(int index)
 {
     ui->lstSpriteChunks->setCurrentRow(index);
+}
+
+void MainWindow::on_tilesMapTiles_selectionChanged(int index)
+{
+    ui->lstMapTiles->setCurrentRow(index);
 }
 
 QString toString(const QRgb color)
@@ -447,9 +506,9 @@ bool verifyImage(const QImage& img, int expectedSize, QString* err=NULL)
     return msg.isEmpty();
 }
 
-void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
+void MainWindow::on_tilesSprites_customContextMenuRequested(const QPoint &pos)
 {
-    int index = ui->tiles->selected();
+    int index = ui->tilesSprites->selected();
     if (index<0) return;
 
     if (_exportdir.isEmpty()) _exportdir = QFileInfo(_lastopen).dir().path();
@@ -466,7 +525,7 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
         auto pixels = _spriteBlocks[index].getPixels();
         int size = _spriteBlocks[index].size;
         QImage img = QImage(QSize(size,size), QImage::Format_Indexed8);
-        img.setColorTable(ui->tiles->itemColorMap(index).toQVector());
+        img.setColorTable(ui->tilesSprites->itemColorMap(index).toQVector());
         for (int y=0; y<size; y++)
             for (int x=0; x<size; x++)
                 img.setPixel(x, y, pixels[x+y*size]);
@@ -493,7 +552,7 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
                 QMessageBox::critical(this, "Error", err);
                 return;
             }
-            ColorMap colormap = ui->tiles->itemColorMap(index);
+            ColorMap colormap = ui->tilesSprites->itemColorMap(index);
             QByteArray pixels;
             int size = img.width();
             for (int y=0; y<size; y++) {
@@ -518,10 +577,10 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
                 QMessageBox::critical(this, "Error", "Could not save to ROM!");
                 //return;
             }
-            ui->tiles->set(index, _spriteBlocks[index]);
-            int x = ui->tiles->itemX(index);
-            int y = ui->tiles->itemY(index);
-            ui->tiles->repaint(x, y, TileView::TILE_OUTER_SIZE, TileView::TILE_OUTER_SIZE);
+            ui->tilesSprites->set(index, _spriteBlocks[index]);
+            int x = ui->tilesSprites->itemX(index);
+            int y = ui->tilesSprites->itemY(index);
+            ui->tilesSprites->repaint(x, y, TileView::TILE_OUTER_SIZE, TileView::TILE_OUTER_SIZE);
             qDebug("imported %s -> %d\n", f.toUtf8().data(), index);
             if (notYetWorkingCopy && _willBecomeWorkingCopy) {
                 _workingCopies.append(_file);
@@ -534,32 +593,50 @@ void MainWindow::on_tiles_customContextMenuRequested(const QPoint &pos)
     contextMenu.addAction(&aExport);
     contextMenu.addAction(&aReplace);
 
-    contextMenu.exec(ui->tiles->mapToGlobal(pos));
+    contextMenu.exec(ui->tilesSprites->mapToGlobal(pos));
 }
 
 void MainWindow::on_lstBlocks_currentRowChanged(int currentRow)
 {
-    ui->tiles->setSelected(currentRow);
+    ui->tilesSprites->setSelected(currentRow);
     if (currentRow<0) return;
     int tileH = TileView::TILE_OUTER_SIZE;
-    int tileY1 = ui->tiles->itemY(currentRow);
+    int tileY1 = ui->tilesSprites->itemY(currentRow);
     int tileY2 = tileY1+tileH; // both borders visible
-    int viewY1 = ui->scrollArea->verticalScrollBar()->value();
-    int viewY2 = viewY1+ui->scrollArea->viewport()->height();
+    int viewY1 = ui->scrollBlockView->verticalScrollBar()->value();
+    int viewY2 = viewY1+ui->scrollBlockView->viewport()->height();
     if (tileY1<viewY1) {
         // scroll up until tile is visible
-        ui->scrollArea->ensureVisible(0, tileY2, 0, tileH);
+        ui->scrollBlockView->ensureVisible(0, tileY2, 0, tileH);
     } else if (tileY2>viewY2) {
         // scroll down until tile is visible
-        ui->scrollArea->ensureVisible(0, tileY1, 0, tileH);
+        ui->scrollBlockView->ensureVisible(0, tileY1, 0, tileH);
+    }
+}
+
+void MainWindow::on_lstMapTiles_currentRowChanged(int currentRow)
+{
+    ui->tilesMapTiles->setSelected(currentRow);
+    if (currentRow<0) return;
+    int tileH = TileView::TILE_OUTER_SIZE;
+    int tileY1 = ui->tilesMapTiles->itemY(currentRow);
+    int tileY2 = tileY1+tileH; // both borders visible
+    int viewY1 = ui->scrollMapTiles->verticalScrollBar()->value();
+    int viewY2 = viewY1+ui->scrollMapTiles->viewport()->height();
+    if (tileY1<viewY1) {
+        // scroll up until tile is visible
+        ui->scrollMapTiles->ensureVisible(0, tileY2, 0, tileH);
+    } else if (tileY2>viewY2) {
+        // scroll down until tile is visible
+        ui->scrollMapTiles->ensureVisible(0, tileY1, 0, tileH);
     }
 }
 
 void MainWindow::on_cbxDefaultColorMap_activated(int index)
 {
     ui->cbxDefaultColorMap2->setCurrentIndex(index);
-    ui->tiles->setColorMap(0, ColorMap::FromSnes(colorMaps[index].snescolors));
-    ui->sprite->setColorMap(0, ColorMap::FromSnes(colorMaps[index].snescolors));
+    ui->tilesSprites->setColorMap(0, ColorMap::FromSnes(spriteColorMaps[index].snescolors));
+    ui->sprite->setColorMap(0, ColorMap::FromSnes(spriteColorMaps[index].snescolors));
 }
 
 void MainWindow::on_cbxDefaultColorMap2_activated(int index)
@@ -568,12 +645,19 @@ void MainWindow::on_cbxDefaultColorMap2_activated(int index)
     on_cbxDefaultColorMap_activated(index);
 }
 
+void MainWindow::on_cbxMapTilesColorMap_activated(int index)
+{
+    ui->tilesMapTiles->setColorMap(0, ColorMap::FromSnes(mapColorMaps[index].snescolors));
+}
+
 void MainWindow::on_cbxBackground_activated(int index)
 {
     ui->cbxBackground2->setCurrentIndex(index);
+    ui->cbxBackground3->setCurrentIndex(index);
     if (index<0) index = 0;
-    ui->tiles->setBackground(backgrounds[index].color);
+    ui->tilesSprites->setBackground(backgrounds[index].color);
     ui->sprite->setBackground(backgrounds[index].color);
+    ui->tilesMapTiles->setBackground(backgrounds[index].color);
 }
 
 void MainWindow::on_cbxBackground2_activated(int index)
@@ -583,12 +667,18 @@ void MainWindow::on_cbxBackground2_activated(int index)
 }
 
 
+void MainWindow::on_cbxBackground3_activated(int index)
+{
+    ui->cbxBackground->setCurrentIndex(index);
+    on_cbxBackground_activated(index);
+}
+
 
 void MainWindow::on_lstSprites_currentRowChanged(int currentRow)
 {
     ui->lstSpriteChunks->clear();
     ui->sprite->clear();
-    ui->sprite->addColorMap(ColorMap::FromSnes(colorMaps[ui->cbxDefaultColorMap->currentIndex()].snescolors));
+    ui->sprite->addColorMap(ColorMap::FromSnes(spriteColorMaps[ui->cbxDefaultColorMap->currentIndex()].snescolors));
     if (currentRow<0) return;
     for (const auto& chunk : _spriteInfos[currentRow].chunks) {
         ui->lstSpriteChunks->addItem(chunk.toString());
