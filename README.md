@@ -19,4 +19,4 @@ Install Qt Creator, for example from Qt Offline Installer, open the project and 
 Install `qt5-qmake` and `qt5-default`, then run `qmake SoETilesViewer.pro` and `make -j`.
 
 ## Screenshot
-![screenshot](../screenshots/v017-blocks.png "Blocks Tab")
+![screenshot](../screenshots/v019-blocks.png "Blocks Tab")
