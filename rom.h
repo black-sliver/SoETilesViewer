@@ -108,7 +108,7 @@ public:
         memset(dst, 0, sizeof(len));
         return false;
     }
-    QString readString(unsigned addr, size_t maxlen=256) {
+    QString readString(unsigned addr, size_t maxlen=1024) {
         addr = mapaddr(addr) + _romoff;
         QString res;
         if (_f.seek(addr)) {
@@ -117,7 +117,7 @@ public:
                 c = (char)_f.read(1)[0];
                 if (!c) break;
                 res += c;
-            } while (true);
+            } while ((size_t)res.length() < maxlen);
         }
         return res;
     }
