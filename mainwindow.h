@@ -9,6 +9,7 @@
 #include "spriteinfo.h"
 #include "characterdata.h"
 #include "tile.h"
+#include "text.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -63,6 +64,8 @@ private slots:
 
     void on_btnCharacterNameRelocate_clicked();
 
+    void on_lstTexts_currentRowChanged(int currentRow);
+
 private:
     Ui::MainWindow *ui;
     QString _baseTitle;
@@ -78,6 +81,7 @@ private:
     QList<SpriteInfo> _spriteInfos;
     QList<CharacterData> _characterData;
     QList<Tile> _mapTiles;
+    QList<Text> _texts;
 
     QString _lastSearch;
     bool _scriptLoading = false;

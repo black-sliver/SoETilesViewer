@@ -36,6 +36,7 @@ HEADERS += \
     scriptparser.h \
     spriteblock.h \
     spriteinfo.h \
+    text.h \
     tile.h \
     tileview.h \
     util.h \

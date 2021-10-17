@@ -20,6 +20,7 @@
 #include "finddialog.h"
 #include "scriptparser.h"
 #include "tile.h"
+#include "text.h"
 
 
 struct PredefinedColorMap {
@@ -437,12 +438,28 @@ bool MainWindow::loadRom()
         oldCharacterIndex = 0; // select first
     ui->lstCharacters->setCurrentRow(oldCharacterIndex);
 
+    // load texts
+    for (int i=0; i<5000; i++) {
+        auto text = Text(i, _rom);
+        if (text.text.length()==0) {
+            printf("%d %04x @ 0x%06x: <empty>\n", i, (unsigned)i*3, (unsigned)text.ptraddr);
+            break;
+        }
+        else if (!text.valid) {
+            printf("%d %04x @ 0x%06x: <invalid>\n", i, (unsigned)i*3, (unsigned)text.ptraddr);
+            break;
+        }
+        _texts.append(text);
+        ui->lstTexts->addItem(QString::fromStdString(text.text));
+    }
+
     setWindowTitle(_baseTitle + " - " + QFileInfo(_file).fileName());
-    ui->lblStats->setText(QStringLiteral("%1 sprites, %2+%3 sprite tiles, %4 map tiles")
+    ui->lblStats->setText(QStringLiteral("%1 sprites, %2+%3 sprite tiles, %4 map tiles, %5 texts")
                           .arg(_spriteInfos.size())
                           .arg(_largeBlocksCount)
                           .arg(_spriteBlocks.size()-_largeBlocksCount)
-                          .arg(_mapTiles.size()));
+                          .arg(_mapTiles.size())
+                          .arg(_texts.size()));
 
     on_tabWidget_currentChanged(ui->tabWidget->currentIndex()); // update scripts if on scripts tab
 
@@ -915,25 +932,60 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 
 bool MainWindow::findNext(bool backwards)
 {
-    // for now only scripts are searchable
-    ui->tabWidget->setCurrentWidget(ui->tabScripts);
-    ui->txtScripts->setFocus(); // make sure selection is visible
-
     auto flags = _findFlags;
     if (backwards) flags |= QTextDocument::FindBackward;
-    auto document = ui->txtScripts->document();
-    const QTextCursor cur = ui->txtScripts->textCursor();
-    QTextCursor match;
-    if (_findRegex) {
-        QRegularExpression term(_lastSearch);
-        match = document->find(term, cur, flags);
-    } else {
-        auto term = _lastSearch;
-        match = document->find(term, cur, flags);
-    }
-    if (match.isNull()) return false;
 
-    ui->txtScripts->setTextCursor(match);
+    if (ui->tabWidget->currentWidget() == ui->tabTexts) {
+        // search texts if on that page
+        int i = ui->lstTexts->currentRow();
+        int n = ui->lstTexts->count();
+        if (i < 0)
+            i = 0;
+        else if (backwards)
+            i--;
+        else
+            i++;
+        bool is_cs = flags & QTextDocument::FindCaseSensitively;
+        auto cs = is_cs ? Qt::CaseSensitive : Qt::CaseInsensitive;
+        QRegularExpression term(_lastSearch, is_cs ? QRegularExpression::NoPatternOption : QRegularExpression::CaseInsensitiveOption);
+        while (i>=0 && i<n) {
+            if (!_findRegex) {
+                if (ui->lstTexts->item(i)->text().contains(_lastSearch, cs)) {
+                    ui->lstTexts->setCurrentRow(i);
+                    return true;
+                }
+            } else {
+                auto match = term.match(ui->lstTexts->item(i)->text());
+                if (match.hasMatch()) {
+                    ui->lstTexts->setCurrentRow(i);
+                    return true;
+                }
+            }
+            if (backwards)
+                i--;
+            else
+                i++;
+        }
+        return false;
+    } else {
+        // desfault to search scripts
+        ui->tabWidget->setCurrentWidget(ui->tabScripts);
+        ui->txtScripts->setFocus(); // make sure selection is visible
+
+        auto document = ui->txtScripts->document();
+        const QTextCursor cur = ui->txtScripts->textCursor();
+        QTextCursor match;
+        if (_findRegex) {
+            QRegularExpression term(_lastSearch);
+            match = document->find(term, cur, flags);
+        } else {
+            auto term = _lastSearch;
+            match = document->find(term, cur, flags);
+        }
+        if (match.isNull()) return false;
+
+        ui->txtScripts->setTextCursor(match);
+    }
     return true;
 }
 
@@ -1011,4 +1063,14 @@ void MainWindow::on_lstCharacters_currentRowChanged(int currentRow)
 void MainWindow::on_btnCharacterNameRelocate_clicked()
 {
     QMessageBox::information(this, "Not implemented", "Relocation not implemented!");
+}
+
+void MainWindow::on_lstTexts_currentRowChanged(int currentRow)
+{
+    Text& text = _texts[currentRow];
+    ui->txtTextNumber->setText(QString::number(text.i));
+    ui->txtTextOffset->setText("$" + QString::number(3 * text.i, 16));
+    ui->txtTextPtrAddr->setText("$" + QString::number(text.ptraddr, 16));
+    ui->txtTextDataAddr->setText("$" + QString::number(text.dataaddr, 16));
+    ui->chkTextCompressed->setChecked(text.compressed);
 }
