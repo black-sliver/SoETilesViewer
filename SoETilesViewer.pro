@@ -26,6 +26,8 @@ SOURCES += \
     util.cpp
 
 HEADERS += \
+    abstracttile.h \
+    characterdata.h \
     colormap.h \
     finddialog.h \
     frameview.h \
@@ -34,8 +36,12 @@ HEADERS += \
     scriptparser.h \
     spriteblock.h \
     spriteinfo.h \
+    text.h \
+    tile.h \
     tileview.h \
-    util.h
+    util.h \
+    SoEScriptDumper/data.h \
+    SoEScriptDumper/list-rooms.cpp
 
 FORMS += \
     finddialog.ui \

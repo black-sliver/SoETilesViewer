@@ -6,4 +6,4 @@
 	url = https://github.com/black-sliver/zlib-min-q.git
 [submodule "SoEScriptDumper"]
 	path = SoEScriptDumper
-	url = ../SoEScriptDumper.git
+	url = https://github.com/black-sliver/SoEScriptDumper.git

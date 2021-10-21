@@ -50,9 +50,14 @@ public:
 private:
 
 public:
-    unsigned mapaddr(unsigned addr) {
+    unsigned mapaddr(unsigned addr) const {
         return addr & ~(0xc00000);
     }
+    bool addrValid(unsigned addr) const {
+        addr = mapaddr(addr) + _romoff;
+        return (addr<_f.size());
+    }
+
 
     uint8_t read8(unsigned addr)
     {
@@ -84,13 +89,39 @@ public:
         }
         return 0; // TODO: warn
     }
+    uint32_t read32(unsigned addr)
+    {
+        addr = mapaddr(addr) + _romoff;
+        uint8_t buf[] = {0,0,0,0};
+        if (_f.seek(addr) && _f.read((char*)&buf, sizeof(buf))) {
+            uint32_t res  = buf[3];
+            res<<=8; res += buf[2];
+            res<<=8; res += buf[1];
+            res<<=8; res += buf[0];
+            return res;
+        }
+        return 0; // TODO: warn
+    }
     bool readBlock(unsigned addr, void* dst, size_t len) {
         addr = mapaddr(addr) + _romoff;
         if (_f.seek(addr) && _f.read((char*)dst, len)) return true;
         memset(dst, 0, sizeof(len));
         return false;
     }
-    bool writeBlock(unsigned addr, void* src, size_t len) {
+    QString readString(unsigned addr, size_t maxlen=1024) {
+        addr = mapaddr(addr) + _romoff;
+        QString res;
+        if (_f.seek(addr)) {
+            char c;
+            do {
+                c = (char)_f.read(1)[0];
+                if (!c) break;
+                res += c;
+            } while ((size_t)res.length() < maxlen);
+        }
+        return res;
+    }
+    bool writeBlock(unsigned addr, const void* src, size_t len) {
         addr = mapaddr(addr) + _romoff;
         if (_ok && !_f.isWritable()) { // reopen RW
             _f.close();

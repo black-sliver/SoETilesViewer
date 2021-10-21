@@ -32,7 +32,7 @@ TileView::~TileView()
 
 void TileView::clear()
 {
-    _spriteBlocks.clear();
+    _tiles.clear();
     _colorMaps.clear();
     _colorMapMap.clear();
 
@@ -45,16 +45,16 @@ void TileView::clear()
     this->setMinimumWidth(MIN_H);
 }
 
-void TileView::add(const SpriteBlock& block)
+void TileView::add(const AbstractTile& block)
 {
     // TODO: extract data from block instead of storing the block
-    _spriteBlocks.append(block);
+    _tiles.append(block);
     _layoutChanged = true;
 }
-void TileView::set(int index, const SpriteBlock& block)
+void TileView::set(int index, const AbstractTile& block)
 {
     // TODO: extract data from block instead of storing the block
-    _spriteBlocks[index] = block;
+    _tiles[index] = block;
     _layoutChanged = true;
 }
 
@@ -74,7 +74,7 @@ ColorMap TileView::colorMap(int index) const
 
 ColorMap TileView::itemColorMap(int index) const
 {
-    if (index>_spriteBlocks.length()) return ColorMap();
+    if (index>_tiles.length()) return ColorMap();
     auto it = _colorMapMap.find(index);
     if (it == _colorMapMap.end())
         return colorMap(0);
@@ -141,7 +141,7 @@ int TileView::itemIndex(int x, int y) const
     int col = _col(x);
     if (col>=cols) return -1;
     int idx = row*cols + col;
-    if (idx>=_spriteBlocks.size()) return -1;
+    if (idx>=_tiles.size()) return -1;
     return idx;
 }
 void TileView::setBackground(QRgb color)
@@ -162,7 +162,7 @@ void TileView::resizeEvent(QResizeEvent *ev)
     int oldcols = _cols(ev->oldSize().width());
     int newcols = _cols(ev->size().width());
     if ( oldcols != newcols ) {
-        int newrows =(_spriteBlocks.count()+newcols-1)/newcols;
+        int newrows =(_tiles.count()+newcols-1)/newcols;
         int newh = TILE_SPACE+TILE_PITCH*newrows;
         this->setMinimumHeight(newh);
         _layoutChanged = true;
@@ -174,7 +174,7 @@ void TileView::paintEvent(QPaintEvent* ev)
     int h = height();
     int cols = _cols(w);
 
-    if (_colorMaps.empty() || _spriteBlocks.empty()) {
+    if (_colorMaps.empty() || _tiles.empty()) {
         QPainter painter(this);
         painter.eraseRect(ev->rect());
         return;
@@ -182,7 +182,7 @@ void TileView::paintEvent(QPaintEvent* ev)
     if (!_pixels || !_image || _layoutChanged || _mapsChanged) {
         qDebug("reshape: %dx%d\n", w, h);
 
-        int rows =(_spriteBlocks.count()+cols-1)/cols;
+        int rows =(_tiles.count()+cols-1)/cols;
         int newh = TILE_SPACE+TILE_PITCH*rows;
         if (newh < MIN_H) newh=MIN_H;
         if (newh > this->minimumHeight()) {
@@ -203,18 +203,23 @@ void TileView::paintEvent(QPaintEvent* ev)
         QRgb* pixels = _pixels;
         memset(pixels, 0, w*h*sizeof(QRgb));
         const ColorMap& map = _colorMaps[_colorMapMap[0]];
-        for (int i=0; i<_spriteBlocks.size(); i++) {
-            const SpriteBlock& block = _spriteBlocks[i];
+        for (int i=0; i<_tiles.size(); i++) {
+            const AbstractTile& block = _tiles[i];
             QByteArray src = block.getPixels();
-            for (int ys=0; ys<block.size; ys++) {
-                for (int xs=0; xs<block.size; xs++) {
-                    int xd = x + 2*(xs);
-                    int yd = y + 2*(ys);
-                    uint8_t c = src[xs+ys*block.size];
-                    pixels[(xd+0) + (yd+0)*w] = map.c[c];
-                    pixels[(xd+0) + (yd+1)*w] = map.c[c];
-                    pixels[(xd+1) + (yd+0)*w] = map.c[c];
-                    pixels[(xd+1) + (yd+1)*w] = map.c[c];
+            if (src.length() < block.size * block.size) {
+                qWarning("Expected %d, got %d pixels for tile %d",
+                         block.size*block.size, src.length(), i);
+            } else {
+                for (int ys=0; ys<block.size; ys++) {
+                    for (int xs=0; xs<block.size; xs++) {
+                        int xd = x + 2*(xs);
+                        int yd = y + 2*(ys);
+                        uint8_t c = src[xs+ys*block.size];
+                        pixels[(xd+0) + (yd+0)*w] = map.c[c];
+                        pixels[(xd+0) + (yd+1)*w] = map.c[c];
+                        pixels[(xd+1) + (yd+0)*w] = map.c[c];
+                        pixels[(xd+1) + (yd+1)*w] = map.c[c];
+                    }
                 }
             }
             x += TILE_PITCH;

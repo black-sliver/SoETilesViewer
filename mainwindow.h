@@ -7,6 +7,9 @@
 #include "rom.h"
 #include "spriteblock.h"
 #include "spriteinfo.h"
+#include "characterdata.h"
+#include "tile.h"
+#include "text.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -29,19 +32,23 @@ private slots:
     void on_btnLoad_clicked();
 
     void on_lstBlocks_currentRowChanged(int currentRow);
-    void on_tiles_selectionChanged(int index);
-    void on_tiles_customContextMenuRequested(const QPoint &pos);
+    void on_tilesSprites_selectionChanged(int index);
+    void on_tilesSprites_customContextMenuRequested(const QPoint &pos);
 
     void on_lstSprites_currentRowChanged(int currentRow);
     void on_lstSpriteChunks_currentRowChanged(int currentRow);
     void on_sprite_selectionChanged(int index);
 
+    void on_lstMapTiles_currentRowChanged(int currentRow);
+    void on_tilesMapTiles_selectionChanged(int index);
+
     void on_cbxDefaultColorMap_activated(int index);
     void on_cbxDefaultColorMap2_activated(int index);
-
+    void on_cbxMapTilesColorMap_activated(int index);
 
     void on_cbxBackground_activated(int index);
     void on_cbxBackground2_activated(int index);
+    void on_cbxBackground3_activated(int index);
 
     void on_tabWidget_currentChanged(int index);
 
@@ -55,8 +62,15 @@ private slots:
 
     void on_saveHTMLButton_clicked();
 
+    void on_lstCharacters_currentRowChanged(int currentRow);
+
+    void on_btnCharacterNameRelocate_clicked();
+
+    void on_lstTexts_currentRowChanged(int currentRow);
+
 private:
     Ui::MainWindow *ui;
+    QString _baseTitle;
     QString _file;
     QString _lastopen;
     QString _lastsave_html;
@@ -69,7 +83,10 @@ private:
     QList<SpriteBlock> _spriteBlocks;
     int _largeBlocksCount=0;
     QList<SpriteInfo> _spriteInfos;
-    QString _baseTitle;
+    QList<CharacterData> _characterData;
+    QList<Tile> _mapTiles;
+    QList<Text> _texts;
+
     QString _lastSearch;
     bool _scriptLoading = false;
     QList<int> _scriptShortcuts;

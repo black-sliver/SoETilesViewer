@@ -5,7 +5,7 @@
 #include <QList>
 #include <QVector>
 #include <QMap>
-#include "spriteblock.h"
+#include "abstracttile.h"
 #include "colormap.h"
 
 class TileView : public QWidget
@@ -16,8 +16,8 @@ public:
     ~TileView();
 
     virtual void clear();
-    virtual void add(const SpriteBlock& block);
-    virtual void set(int index, const SpriteBlock& block);
+    virtual void add(const AbstractTile& block);
+    virtual void set(int index, const AbstractTile& block);
 
     int addColorMap(const ColorMap& map);
     void setColorMap(int index, const ColorMap& map);
@@ -45,7 +45,7 @@ protected:
     virtual void paintEvent(QPaintEvent*);
     virtual void mousePressEvent(QMouseEvent*);
 
-    QList<SpriteBlock> _spriteBlocks;
+    QList<AbstractTile> _tiles;
     QVector<ColorMap> _colorMaps;
     QMap<int,int> _colorMapMap;
     bool _layoutChanged = false;
