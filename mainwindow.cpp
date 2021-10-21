@@ -319,9 +319,11 @@ bool MainWindow::loadRom()
     ui->lstScripts->clear();
     ui->hexScripts->clear();
     ui->txtScripts->clear();
+    ui->lstTexts->clear();
 
     _spriteBlocks.clear();
     _characterData.clear();
+    _texts.clear();
 
     if (!_rom->isOpen()) {
         QMessageBox::warning(this, "Error", "Could not open ROM");
