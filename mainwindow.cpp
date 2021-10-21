@@ -35,6 +35,7 @@ struct PredefinedBackground {
 
 constexpr auto SFC_FILTER = "SNES ROM (*.sfc *.smc);;All Files (*)";
 constexpr auto PNG_FILTER = "PNG Image (*.png);;All Files (*)";
+constexpr auto HTML_FILTER = "HTML (*.html *.htm);;All Files (*)";
 constexpr auto LIST_DARK_THEME = "QListWidget::item{color:#eee;background-color:#070707;} QListWidget::item:selected{color:#fff;background-color:#28282d;}";
 static const QColor TEXT_HIGHLIGHT_DEFAULT = QColor(0,0,64,20);
 static const QColor TEXT_HIGHLIGHT_DARK = QColor(40,40,45,255);
@@ -173,6 +174,7 @@ MainWindow::MainWindow(QWidget *parent)
     _file = settings.value("lastfile", "").toString();
     _lastopen = settings.value("lastopen", "").toString();
     if (_lastopen.isEmpty()) _lastopen = settings.value("lastdir", "").toString();
+    _lastsave_html = settings.value("lastsave_html", "soe.html").toString();
     _exportdir = settings.value("exportdir", "").toString();
     _workingCopies = settings.value("workingcopies").toStringList();
     _warnedCopies  = settings.value("warnedcopies").toStringList();
@@ -337,7 +339,7 @@ bool MainWindow::loadRom()
             QString f = QFileInfo(srcFi.dir(), srcFi.baseName()).filePath() + "-modified.sfc";
             f = QFileDialog::getSaveFileName(this, "Save copy", f, SFC_FILTER);
             if (f.isEmpty()) return false;
-            if (!appendSuffixAskToOverwrite(this, f, ".sfc", "Savec copy")) return false;
+            if (!appendSuffixAskToOverwrite(this, f, ".sfc", "Save copy")) return false;
             if (f == _file) { QMessageBox::warning(this, "Error", "Filename has to be different..."); return false; }
             if (!_rom->saveAs(f)) {
                 QMessageBox::warning(this, "Error", "Could not save copy!");
@@ -466,6 +468,20 @@ bool MainWindow::loadRom()
     on_tabWidget_currentChanged(ui->tabWidget->currentIndex()); // update scripts if on scripts tab
 
     return true; // OK
+}
+
+bool MainWindow::saveHTML(QString f) {
+    QFile html(f);
+    if (!html.open(QIODevice::WriteOnly)) {
+        return false;
+    }
+    QTextStream out(&html);
+
+    //out << ui->txtScripts->toHtml();
+    out << _generatedScriptsHTML;
+
+    html.close();
+    return true;
 }
 
 void MainWindow::on_btnLoad_clicked()
@@ -831,6 +847,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         //       update GUI here once that is done
         _scriptLoading = true;
         _scriptShortcuts.clear();
+        ui->saveHTMLButton->setEnabled(false);
         ui->lstScripts->clear();
         ui->hexScripts->clear();
         ui->txtScripts->clear();
@@ -852,7 +869,9 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         auto lines = s.split("\n");
         QRegularExpression reHexSpan("\\s*<span[^>]*class=\"hex\"[^>]*>([^>]*)</span>");
         QRegularExpression reHexI("\\s*<i>([^>]*)</i>");
-        ui->txtScripts->setHtml(s.replace(reHexSpan, "").replace(reHexI, ""));
+        // store generated HTML for later use
+        _generatedScriptsHTML = s.replace(reHexSpan, "").replace(reHexI, "");
+        ui->txtScripts->setHtml(_generatedScriptsHTML);
 
         QRegularExpression reSpan("<span[^>]*>");
         QRegularExpression reFont("<font[^>]*>");
@@ -921,6 +940,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         on_txtScripts_cursorPositionChanged();
 
         ui->lstScripts->setUpdatesEnabled(true);
+        ui->saveHTMLButton->setEnabled(true);
 
         QTimer::singleShot(0, this, [t0,this]() {
             auto t1 = QDateTime::currentMSecsSinceEpoch();
@@ -998,6 +1018,19 @@ void MainWindow::on_cbxScriptColor_activated(int index)
     // generate HTML with new style
     ui->txtScripts->clear();
     on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
+}
+
+void MainWindow::on_saveHTMLButton_clicked()
+{
+    QString f = QFileDialog::getSaveFileName(this, "Save scripts HTML", _lastsave_html, HTML_FILTER);
+    if (f.isEmpty()) return;
+    if (!saveHTML(f)) {
+        QMessageBox::warning(this, "Error", "Could not save HTML!");
+        return;
+    }
+    _lastsave_html = f;
+    QSettings settings;
+    settings.setValue("lastsave_html", _lastsave_html);
 }
 
 static void setTextAndTooltip(QLineEdit* w, QString text, QString tooltip)
