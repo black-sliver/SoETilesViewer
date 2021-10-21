@@ -27,7 +27,7 @@ static FILE* errpipe = nullptr;
     return 1;\
 } while (false);
 #define main _scriptparser
-#define printf(args...) fprintf(outpipe, args)
+#define printf(...) fprintf(outpipe, __VA_ARGS__)
 //#define HTML4
 #define HTML5 // required for dark mode
 #define NO_BOLD // does not play nice with synchronized textboxes
