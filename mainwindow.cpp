@@ -1102,6 +1102,14 @@ void MainWindow::on_btnCharacterNameRelocate_clicked()
 
 void MainWindow::on_lstTexts_currentRowChanged(int currentRow)
 {
+    if (currentRow < 0 || currentRow >= _texts.size()) {
+        ui->txtTextNumber->clear();
+        ui->txtTextOffset->clear();
+        ui->txtTextPtrAddr->clear();
+        ui->txtTextDataAddr->clear();
+        ui->chkTextCompressed->setChecked(false);
+        return;
+    }
     Text& text = _texts[currentRow];
     ui->txtTextNumber->setText(QString::number(text.i));
     ui->txtTextOffset->setText("$" + QString::number(3 * text.i, 16));
