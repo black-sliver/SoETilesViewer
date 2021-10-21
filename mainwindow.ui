@@ -1250,7 +1250,7 @@
                <x>0</x>
                <y>0</y>
                <width>492</width>
-               <height>496</height>
+               <height>562</height>
               </rect>
              </property>
              <property name="sizePolicy">
@@ -1521,34 +1521,8 @@
               </item>
              </layout>
             </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="verticalLayoutWidget2">
-           <layout class="QVBoxLayout" name="vboxScriptsHTML">
             <item>
-             <widget class="QTextBrowser" name="txtScripts">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="horizontalScrollBarPolicy">
-               <enum>Qt::ScrollBarAlwaysOn</enum>
-              </property>
-              <property name="lineWrapMode">
-               <enum>QTextEdit::NoWrap</enum>
-              </property>
-              <property name="acceptRichText">
-               <bool>false</bool>
-              </property>
-              <property name="placeholderText">
-               <string>Please wait. This may take some time...</string>
-              </property>
-             </widget>
-            </item>
-            <item alignment="Qt::AlignHCenter">
-             <widget class="QPushButton" name="saveHTMLButton">
+             <widget class="QPushButton" name="btnScriptsSaveHTML">
               <property name="enabled">
                <bool>true</bool>
               </property>
@@ -1558,6 +1532,26 @@
              </widget>
             </item>
            </layout>
+          </widget>
+          <widget class="QTextBrowser" name="txtScripts">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="horizontalScrollBarPolicy">
+            <enum>Qt::ScrollBarAlwaysOn</enum>
+           </property>
+           <property name="lineWrapMode">
+            <enum>QTextEdit::NoWrap</enum>
+           </property>
+           <property name="acceptRichText">
+            <bool>false</bool>
+           </property>
+           <property name="placeholderText">
+            <string>Please wait. This may take some time...</string>
+           </property>
           </widget>
           <widget class="QTextBrowser" name="hexScripts">
            <property name="sizePolicy">

@@ -60,7 +60,7 @@ private slots:
 
     void on_cbxScriptColor_activated(int index);
 
-    void on_saveHTMLButton_clicked();
+    void on_btnScriptsSaveHTML_clicked();
 
     void on_lstCharacters_currentRowChanged(int currentRow);
 

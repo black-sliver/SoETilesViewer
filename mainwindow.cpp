@@ -847,7 +847,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         //       update GUI here once that is done
         _scriptLoading = true;
         _scriptShortcuts.clear();
-        ui->saveHTMLButton->setEnabled(false);
+        ui->btnScriptsSaveHTML->setEnabled(false);
         ui->lstScripts->clear();
         ui->hexScripts->clear();
         ui->txtScripts->clear();
@@ -940,7 +940,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         on_txtScripts_cursorPositionChanged();
 
         ui->lstScripts->setUpdatesEnabled(true);
-        ui->saveHTMLButton->setEnabled(true);
+        ui->btnScriptsSaveHTML->setEnabled(true);
 
         QTimer::singleShot(0, this, [t0,this]() {
             auto t1 = QDateTime::currentMSecsSinceEpoch();
@@ -1020,7 +1020,7 @@ void MainWindow::on_cbxScriptColor_activated(int index)
     on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
 }
 
-void MainWindow::on_saveHTMLButton_clicked()
+void MainWindow::on_btnScriptsSaveHTML_clicked()
 {
     QString f = QFileDialog::getSaveFileName(this, "Save scripts HTML", _lastsave_html, HTML_FILTER);
     if (f.isEmpty()) return;
