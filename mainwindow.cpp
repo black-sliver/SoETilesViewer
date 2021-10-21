@@ -1107,6 +1107,7 @@ void MainWindow::on_lstTexts_currentRowChanged(int currentRow)
         ui->txtTextOffset->clear();
         ui->txtTextPtrAddr->clear();
         ui->txtTextDataAddr->clear();
+        ui->txtTextDataLen->clear();
         ui->chkTextCompressed->setChecked(false);
         return;
     }
@@ -1115,5 +1116,6 @@ void MainWindow::on_lstTexts_currentRowChanged(int currentRow)
     ui->txtTextOffset->setText("$" + QString::number(3 * text.i, 16));
     ui->txtTextPtrAddr->setText("$" + QString::number(text.ptraddr, 16));
     ui->txtTextDataAddr->setText("$" + QString::number(text.dataaddr, 16));
+    ui->txtTextDataLen->setText(QString::number(text.datalen));
     ui->chkTextCompressed->setChecked(text.compressed);
 }

@@ -12,6 +12,7 @@ struct Text {
     bool valid;
     uint32_t ptraddr;
     uint32_t dataaddr;
+    uint32_t datalen;
     bool compressed;
 
     virtual ~Text() {};
@@ -23,13 +24,15 @@ struct Text {
         compressed = !!(dataaddr & 0x800000);
         dataaddr = 0xc00000 + (dataaddr & 0x7fff) + ((dataaddr & 0x7f8000)<<1); // convert to hirom mapping
         if (dataaddr>0xcfffff) valid = false;
-        else text = get_text_from_data(rom, dataaddr, compressed);
+        else text = get_text_from_data(rom, dataaddr, compressed, &datalen);
         if (text.length() > 2000) valid = false;
     }
 private:
-    static std::string get_text_from_data(Rom* rom, uint32_t addr, bool mode)
+    static std::string get_text_from_data(Rom* rom, uint32_t addr, bool mode, uint32_t* lenout=nullptr)
     {
+        if (lenout) *lenout = 0;
         if (addr>0xcfffff) return "";
+        uint32_t startaddr = addr;
         std::string data;
         if (mode) {
             uint8_t next_plain = 0;
@@ -75,6 +78,7 @@ private:
                 data += c;
             }
         }
+        if (lenout) *lenout = addr - startaddr + 1;
 
         // make raw data look nice
         std::string printable;
