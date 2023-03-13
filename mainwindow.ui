@@ -1517,7 +1517,7 @@
                </sizepolicy>
               </property>
               <property name="sizeAdjustPolicy">
-               <enum>QAbstractScrollArea::AdjustToContents</enum>
+               <enum>QAbstractScrollArea::AdjustIgnored</enum>
               </property>
              </widget>
             </item>

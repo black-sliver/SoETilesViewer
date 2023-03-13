@@ -65,4 +65,4 @@ DISTFILES += \
 
 DEFINES += QUAZIP_STATIC
 include(zlib-min-q/zlib.pri)
-include(quazip/quazip.pri)
+#include(quazip/quazip.pri)

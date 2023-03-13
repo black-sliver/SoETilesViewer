@@ -153,10 +153,15 @@ void TileView::setBackground(QRgb color)
 
 void TileView::mousePressEvent(QMouseEvent * ev)
 {
+#if QT_VERSION_MAJOR < 6
     int index = itemIndex(ev->x(), ev->y());
+#else
+    int index = itemIndex(ev->position().x(), ev->position().y());
+#endif
     setSelected(index);
     emit(selectionChanged(index));
 }
+
 void TileView::resizeEvent(QResizeEvent *ev)
 {
     int oldcols = _cols(ev->oldSize().width());
@@ -207,8 +212,8 @@ void TileView::paintEvent(QPaintEvent* ev)
             const AbstractTile& block = _tiles[i];
             QByteArray src = block.getPixels();
             if (src.length() < block.size * block.size) {
-                qWarning("Expected %d, got %d pixels for tile %d",
-                         block.size*block.size, src.length(), i);
+                qWarning("Expected %d, got %lld pixels for tile %d",
+                         block.size*block.size, (long long)src.length(), i);
             } else {
                 for (int ys=0; ys<block.size; ys++) {
                     for (int xs=0; xs<block.size; xs++) {

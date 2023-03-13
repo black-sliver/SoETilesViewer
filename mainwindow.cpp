@@ -865,7 +865,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
             if (!qsErr.startsWith("WARN:")) QMessageBox::warning(this, "Parse Error", QString::fromStdString(err));
             else qWarning("-- ScriptParser --\n%s--\n", qUtf8Printable(qsErr));
         }
-        qDebug("generated %dKB of HTML\n", s.length()/1024);
+        qDebug("generated %lldKB of HTML\n", (long long)(s.length()/1024));
         auto lines = s.split("\n");
         QRegularExpression reHexSpan("\\s*<span[^>]*class=\"hex\"[^>]*>([^>]*)</span>");
         QRegularExpression reHexI("\\s*<i>([^>]*)</i>");
@@ -893,7 +893,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
             if (t.replace(reMapId, "") != "Unknown") return t;
             return s;
         };
-#if QT_VERSION >= 0x050900 // actually I don't know what the first version is that auto-casts QStringRef when doing +
+#if QT_VERSION >= 0x050900 && QT_VERSION < 0x060000 // early 5.x does not like this and neither does 6.x
         auto extract = [](const QString& s) -> QStringRef {
             auto p1 = s.indexOf((QChar)'\"')+1;
             auto p2 = s.indexOf((QChar)'\"', p1);

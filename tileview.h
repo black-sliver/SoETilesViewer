@@ -13,7 +13,7 @@ class TileView : public QWidget
     Q_OBJECT
 public:
     TileView(QWidget *parent = 0);
-    ~TileView();
+    virtual ~TileView();
 
     virtual void clear();
     virtual void add(const AbstractTile& block);
