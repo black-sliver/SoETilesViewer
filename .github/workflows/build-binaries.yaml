@@ -8,15 +8,16 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: recursive
+    - name: "Enter msvc build environment"
+      uses: ilammy/msvc-dev-cmd@v1
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v4
     - name: Build project
       shell: cmd
       run: |
-        call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         qmake
         nmake
     - name: Package output
@@ -32,7 +33,7 @@ jobs:
         cd ..
         Compress-Archive -Path SoETilesViewer -DestinationPath ../SoETilesViewer-win64.zip
     - name: Store output
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: SoETilesViewer-win64
         path: SoETilesViewer-win64.zip
