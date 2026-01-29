@@ -8,10 +8,10 @@
 #include <QFile>
 
 
-#ifdef _MSC_VER
-#define initializerlistconstexpr const
-#else
+#if defined __GNUC__ && !defined __clang__
 #define initializerlistconstexpr constexpr
+#else
+#define initializerlistconstexpr const
 #endif
 
 initializerlistconstexpr
