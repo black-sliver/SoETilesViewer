@@ -1,26 +1,46 @@
 name: Build binaries
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**'
+      - '!**.md'
+  pull_request:
+    paths:
+      - '**'
+      - '!**.md'
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: recursive
     - name: "Enter msvc build environment"
+      if: startsWith(matrix.os, 'windows')
       uses: ilammy/msvc-dev-cmd@v1
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
-    - name: Build project
+    - name: Build project (Windows)
+      if: startsWith(matrix.os, 'windows')
       shell: cmd
       run: |
         qmake
         nmake
-    - name: Package output
+    - name: Build project (non-Windows)
+      if: ${{ !startsWith(matrix.os, 'windows') }}
+      run: |
+        qmake
+        make -j
+    - name: Package output (Windows)
+      if: startsWith(matrix.os, 'windows')
       run: |
         mkdir dist
         mkdir dist/SoETilesViewer
@@ -32,8 +52,9 @@ jobs:
         dir
         cd ..
         Compress-Archive -Path SoETilesViewer -DestinationPath ../SoETilesViewer-win64.zip
-    - name: Store output
-      uses: actions/upload-artifact@v4
+    - name: Store output (Windows)
+      if: startsWith(matrix.os, 'windows')
+      uses: actions/upload-artifact@v6
       with:
         name: SoETilesViewer-win64
         path: SoETilesViewer-win64.zip
